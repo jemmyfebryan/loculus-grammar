@@ -20,7 +20,7 @@ VALID_USERNAME = "alex"
 VALID_PASSWORD = "123456"
 SECRET_KEY = token_hex(32)
 
-app = FastAPI(title="Grammar Check", description="Simple grammar checker using AI")
+app = FastAPI(title="Grammar Check", description="Simple grammar checker using AI", root_path=os.getenv("FASTAPI_ROOT_PATH", ""))
 
 # Add session middleware
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
