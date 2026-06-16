@@ -3,8 +3,16 @@
 {% block title %}Grammar Check - AI Powered{% endblock %}
 
 {% block content %}
-    <h1>Grammar Check</h1>
-    <p class="subtitle">AI-powered grammar correction powered by Google Gemini</p>
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+        <div>
+            <h1>Grammar Check</h1>
+            <p class="subtitle">AI-powered grammar correction powered by Google Gemini</p>
+        </div>
+        <div style="text-align: right;">
+            <p style="color: #888; font-size: 13px; margin-bottom: 4px;">{{ username }}</p>
+            <a href="/logout" style="color: #0066cc; font-size: 13px; text-decoration: none;">Logout</a>
+        </div>
+    </div>
 
     <form id="grammarForm">
         <div class="context-group" id="contextGroup">

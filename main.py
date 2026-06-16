@@ -2,18 +2,28 @@ from __future__ import annotations
 
 import os
 from typing import Annotated, Optional
+from secrets import token_hex
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Request, Response
+from fastapi.responses import HTMLResponse, RedirectResponse
 from google import genai
 from google.genai import types
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
+from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
+# Hardcoded credentials
+VALID_USERNAME = "alex"
+VALID_PASSWORD = "123456"
+SECRET_KEY = token_hex(32)
+
 app = FastAPI(title="Grammar Check", description="Simple grammar checker using AI")
+
+# Add session middleware
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Setup Jinja2
 env = Environment(loader=FileSystemLoader("templates"))
@@ -71,11 +81,51 @@ Corrected text:"""
     return response.text.strip()
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def index(request: Request):
-    """Render the main page."""
+    """Redirect to login or app based on auth status."""
+    if request.session.get("authenticated"):
+        return RedirectResponse(url="/app", status_code=303)
+    return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Render the login page."""
+    if request.session.get("authenticated"):
+        return RedirectResponse(url="/app", status_code=303)
+    error = request.session.pop("login_error", None)
+    template = env.get_template("login.html")
+    return template.render(error=error)
+
+
+@app.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    """Handle login."""
+    if username == VALID_USERNAME and password == VALID_PASSWORD:
+        request.session["authenticated"] = True
+        request.session["username"] = username
+        return RedirectResponse(url="/app", status_code=303)
+    else:
+        request.session["login_error"] = "Invalid username or password"
+        return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def app_page(request: Request):
+    """Render the main grammar check app."""
+    if not request.session.get("authenticated"):
+        return RedirectResponse(url="/login", status_code=303)
+    username = request.session.get("username", "User")
     template = env.get_template("index.html")
-    return template.render()
+    return template.render(username=username)
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    """Handle logout."""
+    request.session.clear()
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/api/check")
