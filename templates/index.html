@@ -52,8 +52,36 @@
     </form>
 
     <div id="result" class="result" style="display: none;">
-        <h2>Corrected Text:</h2>
+        <div class="result-header">
+            <h2>Corrected Text:</h2>
+            <div class="result-buttons">
+                <button class="icon-button" id="tryAgainBtn" title="Try again">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+                <button class="icon-button" id="tryAgainWithQuoteBtn" title="Try again with Instructions">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
         <p id="correctedText"></p>
+    </div>
+
+    <div id="quoteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Try Again with Instructions</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <textarea id="quoteInput" placeholder="Enter additional instructions for grammar correction..."></textarea>
+            <div class="modal-buttons">
+                <button type="button" id="modalCancel">Cancel</button>
+                <button type="button" id="modalSubmit">Apply & Regenerate</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -67,8 +95,17 @@
         const advancedToggle = document.getElementById('advancedToggle');
         const advancedGroup = document.getElementById('advancedGroup');
         const keepWritingStyleCheckbox = document.getElementById('keepWritingStyle');
+        const tryAgainBtn = document.getElementById('tryAgainBtn');
+        const tryAgainWithQuoteBtn = document.getElementById('tryAgainWithQuoteBtn');
+        const quoteModal = document.getElementById('quoteModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalCancel = document.getElementById('modalCancel');
+        const modalSubmit = document.getElementById('modalSubmit');
+        const quoteInput = document.getElementById('quoteInput');
+
         let contextVisible = false;
         let advancedVisible = false;
+        let lastRequestData = null;
 
         contextToggle.addEventListener('click', () => {
             contextVisible = !contextVisible;
@@ -92,14 +129,19 @@
             }
         });
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
+        async function checkGrammar(customInstructions = null) {
             const text = textarea.value.trim();
             if (!text) return;
 
             const context = contextTextarea.value.trim();
             const keepWritingStyle = keepWritingStyleCheckbox.checked;
+
+            const requestData = { text, context, keep_writing_style: keepWritingStyle };
+            if (customInstructions) {
+                requestData.custom_instructions = customInstructions;
+            }
+
+            lastRequestData = requestData;
 
             // Show loading state
             const button = form.querySelector('button');
@@ -107,13 +149,17 @@
             button.textContent = 'Checking...';
             button.disabled = true;
 
+            // Disable result buttons
+            tryAgainBtn.disabled = true;
+            tryAgainWithQuoteBtn.disabled = true;
+
             try {
                 const response = await fetch('/api/check', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ text, context, keep_writing_style: keepWritingStyle }),
+                    body: JSON.stringify(requestData),
                 });
 
                 if (!response.ok) {
@@ -133,6 +179,43 @@
             } finally {
                 button.textContent = originalButtonText;
                 button.disabled = false;
+                tryAgainBtn.disabled = false;
+                tryAgainWithQuoteBtn.disabled = false;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await checkGrammar();
+        });
+
+        tryAgainBtn.addEventListener('click', async () => {
+            await checkGrammar();
+        });
+
+        tryAgainWithQuoteBtn.addEventListener('click', () => {
+            quoteModal.classList.add('active');
+            quoteInput.focus();
+        });
+
+        modalClose.addEventListener('click', () => {
+            quoteModal.classList.remove('active');
+        });
+
+        modalCancel.addEventListener('click', () => {
+            quoteModal.classList.remove('active');
+        });
+
+        modalSubmit.addEventListener('click', async () => {
+            const customInstructions = quoteInput.value.trim();
+            quoteModal.classList.remove('active');
+            quoteInput.value = '';
+            await checkGrammar(customInstructions);
+        });
+
+        quoteModal.addEventListener('click', (e) => {
+            if (e.target === quoteModal) {
+                quoteModal.classList.remove('active');
             }
         });
     </script>
