@@ -41,14 +41,22 @@ class GrammarCheckRequest(BaseModel):
     context: Optional[str] = Field(None, description="Additional context to improve grammar correction")
     keep_writing_style: Optional[bool] = Field(False, description="Keep the original writing style")
     custom_instructions: Optional[str] = Field(None, description="Custom instructions for grammar correction")
+    show_explanations: Optional[bool] = Field(False, description="Show explanations for corrections")
+    multiple_outputs: Optional[int] = Field(1, ge=1, le=5, description="Number of alternative outputs (1-5)")
 
+
+class GrammarOutput(BaseModel):
+    text: str
+    explanation: Optional[str] = None
 
 class GrammarCheckResponse(BaseModel):
     original: str
-    corrected: str
+    corrected: Optional[str] = None
+    explanation: Optional[str] = None
+    outputs: Optional[list[GrammarOutput]] = None
 
 
-def get_grammar_correction(text: str, context: Optional[str] = None, keep_writing_style: bool = False, custom_instructions: Optional[str] = None) -> str:
+def get_grammar_correction(text: str, context: Optional[str] = None, keep_writing_style: bool = False, custom_instructions: Optional[str] = None, show_explanations: bool = False, multiple_outputs: int = 1) -> dict:
     """Get grammar correction using Gemini AI."""
     if keep_writing_style:
         style_instruction = "Maintain the original writing style, tone, and voice. Only fix grammar and spelling errors."
@@ -60,13 +68,23 @@ def get_grammar_correction(text: str, context: Optional[str] = None, keep_writin
     else:
         custom_instruction = ""
 
+    if show_explanations:
+        explanation_instruction = "After providing the corrected text, briefly explain the main changes made."
+    else:
+        explanation_instruction = ""
+
+    if multiple_outputs > 1:
+        outputs_instruction = f"Provide {multiple_outputs} different variations of the corrected text. Format each as 'Option N:' followed by the text."
+    else:
+        outputs_instruction = ""
+
     if context:
         prompt = f"""Fix the grammar and spelling of the following text.
 Use this context to improve the correction: {context}
 {style_instruction}
 {custom_instruction}
-
-Only output the corrected text, no explanations or additional commentary.
+{explanation_instruction}
+{outputs_instruction}
 
 Original text: {text}
 
@@ -75,8 +93,8 @@ Corrected text:"""
         prompt = f"""Fix the grammar and spelling of the following text.
 {style_instruction}
 {custom_instruction}
-
-Only output the corrected text, no explanations or additional commentary.
+{explanation_instruction}
+{outputs_instruction}
 
 Original text: {text}
 
@@ -86,7 +104,50 @@ Corrected text:"""
         model="gemini-2.5-flash",
         contents=prompt,
     )
-    return response.text.strip()
+    result = response.text.strip()
+
+    # Parse the response based on options
+    if multiple_outputs > 1:
+        outputs = []
+        lines = result.split('\n')
+        current_output = []
+        current_explanation = None
+
+        for line in lines:
+            line = line.strip()
+            if line.lower().startswith('option ') or line.lower().startswith('option'):
+                if current_output:
+                    text = '\n'.join(current_output).strip()
+                    outputs.append(GrammarOutput(text=text, explanation=current_explanation))
+                current_output = []
+                current_explanation = None
+                # Extract explanation if present in same line
+                if ':' in line:
+                    parts = line.split(':', 1)
+                    if len(parts) > 1 and parts[1].strip():
+                        current_explanation = parts[1].strip()
+            else:
+                current_output.append(line)
+
+        if current_output:
+            text = '\n'.join(current_output).strip()
+            outputs.append(GrammarOutput(text=text, explanation=current_explanation))
+
+        return {"outputs": outputs}
+    elif show_explanations:
+        # Split explanation and corrected text
+        if '\n\n' in result:
+            parts = result.split('\n\n', 1)
+            explanation = parts[0].strip()
+            corrected = parts[1].strip() if len(parts) > 1 else parts[0].strip()
+        else:
+            lines = result.split('\n', 1)
+            explanation = lines[0].strip() if len(lines) > 1 else None
+            corrected = lines[1].strip() if len(lines) > 1 else result
+
+        return {"corrected": corrected, "explanation": explanation}
+    else:
+        return {"corrected": result}
 
 
 @app.get("/")
@@ -140,8 +201,18 @@ async def logout(request: Request):
 async def api_check_grammar(request: GrammarCheckRequest):
     """Check and correct grammar via API."""
     keep_writing_style = request.keep_writing_style if request.keep_writing_style is not None else False
-    corrected = get_grammar_correction(request.text, request.context, keep_writing_style, request.custom_instructions)
-    return {"original": request.text, "corrected": corrected}
+    show_explanations = request.show_explanations if request.show_explanations is not None else False
+    multiple_outputs = request.multiple_outputs if request.multiple_outputs is not None else 1
+
+    result = get_grammar_correction(
+        request.text,
+        request.context,
+        keep_writing_style,
+        request.custom_instructions,
+        show_explanations,
+        multiple_outputs
+    )
+    return {"original": request.text, **result}
 
 
 @app.get("/health")

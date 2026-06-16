@@ -36,17 +36,33 @@
                 <input type="checkbox" id="addContext" name="addContext">
                 <label for="addContext">Add Context</label>
             </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="keepWritingStyle" name="keepWritingStyle">
-                <label for="keepWritingStyle">Keep the writing style</label>
-            </div>
             <div id="contextTextareaGroup" class="context-textarea-group">
-                <label for="context" style="font-size: 14px; color: #b0b0b0; margin-bottom: 8px;">Context (optional):</label>
                 <textarea
                     id="context"
                     name="context"
                     placeholder="Add context about your text to improve grammar correction..."
                     style="min-height: 80px;"></textarea>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="keepWritingStyle" name="keepWritingStyle">
+                <label for="keepWritingStyle">Keep the writing style</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showExplanations" name="showExplanations">
+                <label for="showExplanations">Show Explanations</label>
+            </div>
+            <div class="checkbox-group" style="align-items: center;">
+                <input type="checkbox" id="multipleOutputs" name="multipleOutputs">
+                <label for="multipleOutputs">Multiple Outputs:</label>
+                <input
+                    type="range"
+                    id="outputCount"
+                    name="outputCount"
+                    min="1"
+                    max="5"
+                    value="1"
+                    style="width: 60px; margin-left: 8px; display: none;">
+                <span id="outputCountValue" style="color: #888; font-size: 13px; margin-left: 6px; display: none;">1</span>
             </div>
         </div>
 
@@ -97,6 +113,10 @@
         const advancedToggle = document.getElementById('advancedToggle');
         const advancedGroup = document.getElementById('advancedGroup');
         const keepWritingStyleCheckbox = document.getElementById('keepWritingStyle');
+        const showExplanationsCheckbox = document.getElementById('showExplanations');
+        const multipleOutputsCheckbox = document.getElementById('multipleOutputs');
+        const outputCountSlider = document.getElementById('outputCount');
+        const outputCountValue = document.getElementById('outputCountValue');
         const tryAgainBtn = document.getElementById('tryAgainBtn');
         const tryAgainWithQuoteBtn = document.getElementById('tryAgainWithQuoteBtn');
         const quoteModal = document.getElementById('quoteModal');
@@ -116,6 +136,24 @@
             }
         });
 
+        multipleOutputsCheckbox.addEventListener('change', () => {
+            if (multipleOutputsCheckbox.checked) {
+                outputCountSlider.style.display = 'inline-block';
+                outputCountValue.style.display = 'inline';
+                outputCountSlider.value = 2;
+                outputCountValue.textContent = '2';
+            } else {
+                outputCountSlider.style.display = 'none';
+                outputCountValue.style.display = 'none';
+                outputCountSlider.value = 1;
+                outputCountValue.textContent = '1';
+            }
+        });
+
+        outputCountSlider.addEventListener('input', () => {
+            outputCountValue.textContent = outputCountSlider.value;
+        });
+
         advancedToggle.addEventListener('click', () => {
             advancedVisible = !advancedVisible;
             if (advancedVisible) {
@@ -133,8 +171,16 @@
 
             const context = contextTextarea.value.trim();
             const keepWritingStyle = keepWritingStyleCheckbox.checked;
+            const showExplanations = showExplanationsCheckbox.checked;
+            const multipleOutputs = multipleOutputsCheckbox.checked ? parseInt(outputCountSlider.value) : 1;
 
-            const requestData = { text, context, keep_writing_style: keepWritingStyle };
+            const requestData = {
+                text,
+                context,
+                keep_writing_style: keepWritingStyle,
+                show_explanations: showExplanations,
+                multiple_outputs: multipleOutputs
+            };
             if (customInstructions) {
                 requestData.custom_instructions = customInstructions;
             }
@@ -167,7 +213,21 @@
                 const data = await response.json();
 
                 // Update result
-                correctedText.textContent = data.corrected;
+                if (multipleOutputs > 1 && data.outputs) {
+                    // Display multiple outputs
+                    let outputHTML = '';
+                    data.outputs.forEach((output, index) => {
+                        outputHTML += `<div style="margin-bottom: ${index < data.outputs.length - 1 ? '16px' : '0'};">`;
+                        outputHTML += `<div style="color: #888; font-size: 12px; margin-bottom: 4px;">Option ${index + 1}${output.explanation ? ': ' + output.explanation : ''}</div>`;
+                        outputHTML += `<p style="white-space: pre-wrap;">${output.text}</p>`;
+                        outputHTML += `</div>`;
+                    });
+                    correctedText.innerHTML = outputHTML;
+                } else if (showExplanations && data.explanation) {
+                    correctedText.innerHTML = `<div style="color: #888; font-size: 12px; margin-bottom: 8px;">${data.explanation}</div><p style="white-space: pre-wrap;">${data.corrected}</p>`;
+                } else {
+                    correctedText.textContent = data.corrected;
+                }
                 resultDiv.style.display = 'block';
 
             } catch (error) {
