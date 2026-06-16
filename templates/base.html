@@ -316,6 +316,19 @@
         .modal-buttons button {
             padding: 10px 20px;
         }
+
+        .context-textarea-group {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin-top 0.3s ease-out;
+        }
+
+        .context-textarea-group.visible {
+            max-height: 300px;
+            opacity: 1;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
