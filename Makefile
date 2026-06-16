@@ -16,7 +16,7 @@ install: ## Install dependencies
 	$(PIP) install -r requirements.txt
 
 dev: ## Run the development server
-	$(UVICORN) main:app --reload --host 0.0.0.0 --port 8000
+	$(UVICORN) main:app --reload --host 0.0.0.0 --port 9006
 
 start: ## Start the service with PM2
 	pm2 start ecosystem.config.js

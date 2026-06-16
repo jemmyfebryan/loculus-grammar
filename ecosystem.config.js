@@ -6,7 +6,7 @@ module.exports = {
       name: 'grammar-check',
       script: path.join(__dirname, '.venv/bin/uvicorn'),
       interpreter: path.join(__dirname, '.venv/bin/python'),
-      args: 'main:app --host 0.0.0.0 --port 8000',
+      args: 'main:app --host 0.0.0.0 --port 9006',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
