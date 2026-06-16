@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Grammar Check - AI Powered{% endblock %}
+
+{% block content %}
+    <h1>Grammar Check</h1>
+    <p class="subtitle">AI-powered grammar correction powered by Google Gemini</p>
+
+    <form id="grammarForm">
+        <div class="form-group">
+            <label for="text">Enter your text:</label>
+            <textarea
+                id="text"
+                name="text"
+                placeholder="Type or paste your text here to check grammar..."
+                required></textarea>
+        </div>
+        <button type="submit">Check Grammar</button>
+    </form>
+
+    <div id="result" class="result" style="display: none;">
+        <h2>Corrected Text:</h2>
+        <p id="correctedText"></p>
+    </div>
+
+    <script>
+        const form = document.getElementById('grammarForm');
+        const resultDiv = document.getElementById('result');
+        const correctedText = document.getElementById('correctedText');
+        const textarea = document.getElementById('text');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const text = textarea.value.trim();
+            if (!text) return;
+
+            // Show loading state
+            const button = form.querySelector('button');
+            const originalButtonText = button.textContent;
+            button.textContent = 'Checking...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/api/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check grammar');
+                }
+
+                const data = await response.json();
+
+                // Update result
+                correctedText.textContent = data.corrected;
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                correctedText.textContent = 'Error checking grammar. Please try again.';
+                resultDiv.style.display = 'block';
+            } finally {
+                button.textContent = originalButtonText;
+                button.disabled = false;
+            }
+        });
+    </script>
+{% endblock %}
