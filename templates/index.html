@@ -7,8 +7,20 @@
     <p class="subtitle">AI-powered grammar correction powered by Google Gemini</p>
 
     <form id="grammarForm">
+        <div class="context-group" id="contextGroup">
+            <label for="context">Context (optional):</label>
+            <textarea
+                id="context"
+                name="context"
+                placeholder="Add context about your text to improve grammar correction..."
+                style="min-height: 80px;"></textarea>
+        </div>
+
         <div class="form-group">
-            <label for="text">Enter your text:</label>
+            <div class="form-header">
+                <label class="label" for="text">Enter your text:</label>
+                <span class="context-toggle" id="contextToggle">+ Add Context</span>
+            </div>
             <textarea
                 id="text"
                 name="text"
@@ -28,12 +40,29 @@
         const resultDiv = document.getElementById('result');
         const correctedText = document.getElementById('correctedText');
         const textarea = document.getElementById('text');
+        const contextToggle = document.getElementById('contextToggle');
+        const contextGroup = document.getElementById('contextGroup');
+        const contextTextarea = document.getElementById('context');
+        let contextVisible = false;
+
+        contextToggle.addEventListener('click', () => {
+            contextVisible = !contextVisible;
+            if (contextVisible) {
+                contextGroup.classList.add('visible');
+                contextToggle.textContent = '- Remove Context';
+            } else {
+                contextGroup.classList.remove('visible');
+                contextToggle.textContent = '+ Add Context';
+            }
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const text = textarea.value.trim();
             if (!text) return;
+
+            const context = contextTextarea.value.trim();
 
             // Show loading state
             const button = form.querySelector('button');
@@ -47,7 +76,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ text }),
+                    body: JSON.stringify({ text, context }),
                 });
 
                 if (!response.ok) {

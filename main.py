@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Annotated
+from typing import Annotated, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
@@ -28,6 +28,7 @@ client = genai.Client(api_key=api_key)
 
 class GrammarCheckRequest(BaseModel):
     text: Annotated[str, Field(min_length=1, description="Text to check grammar for")]
+    context: Optional[str] = Field(None, description="Additional context to improve grammar correction")
 
 
 class GrammarCheckResponse(BaseModel):
@@ -35,9 +36,19 @@ class GrammarCheckResponse(BaseModel):
     corrected: str
 
 
-def get_grammar_correction(text: str) -> str:
+def get_grammar_correction(text: str, context: Optional[str] = None) -> str:
     """Get grammar correction using Gemini AI."""
-    prompt = f"""Fix the grammar and spelling of the following text.
+    if context:
+        prompt = f"""Fix the grammar and spelling of the following text.
+Use this context to improve the correction: {context}
+
+Only output the corrected text, no explanations or additional commentary.
+
+Original text: {text}
+
+Corrected text:"""
+    else:
+        prompt = f"""Fix the grammar and spelling of the following text.
 Only output the corrected text, no explanations or additional commentary.
 
 Original text: {text}
@@ -61,7 +72,7 @@ async def index(request: Request):
 @app.post("/api/check")
 async def api_check_grammar(request: GrammarCheckRequest):
     """Check and correct grammar via API."""
-    corrected = get_grammar_correction(request.text)
+    corrected = get_grammar_correction(request.text, request.context)
     return {"original": request.text, "corrected": corrected}
 
 
