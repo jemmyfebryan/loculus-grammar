@@ -10,7 +10,7 @@
         </div>
         <div style="text-align: right;">
             <p style="color: #888; font-size: 13px; margin-bottom: 4px;">{{ username }}</p>
-            <a href="/logout" style="color: #0066cc; font-size: 13px; text-decoration: none;">Logout</a>
+            <a href="logout" style="color: #0066cc; font-size: 13px; text-decoration: none;">Logout</a>
         </div>
     </div>
 
@@ -198,7 +198,7 @@
             tryAgainWithQuoteBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/check', {
+                const response = await fetch('api/check', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

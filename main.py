@@ -164,51 +164,51 @@ Original text: {text}"""
             return {"corrected": result}
 
 
-@app.get("/")
+@app.get("/", name="index")
 async def index(request: Request):
     """Redirect to login or app based on auth status."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url="/app", status_code=303)
-    return RedirectResponse(url="/login", status_code=303)
+        return RedirectResponse(url=request.url_for("app_page"), status_code=303)
+    return RedirectResponse(url=request.url_for("login_page"), status_code=303)
 
 
-@app.get("/login", response_class=HTMLResponse)
+@app.get("/login", response_class=HTMLResponse, name="login_page")
 async def login_page(request: Request):
     """Render the login page."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url="/app", status_code=303)
+        return RedirectResponse(url=request.url_for("app_page"), status_code=303)
     error = request.session.pop("login_error", None)
     template = env.get_template("login.html")
     return template.render(error=error)
 
 
-@app.post("/login")
+@app.post("/login", name="login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     """Handle login."""
     if username == VALID_USERNAME and password == VALID_PASSWORD:
         request.session["authenticated"] = True
         request.session["username"] = username
-        return RedirectResponse(url="/app", status_code=303)
+        return RedirectResponse(url=request.url_for("app_page"), status_code=303)
     else:
         request.session["login_error"] = "Invalid username or password"
-        return RedirectResponse(url="/login", status_code=303)
+        return RedirectResponse(url=request.url_for("login_page"), status_code=303)
 
 
-@app.get("/app", response_class=HTMLResponse)
+@app.get("/app", response_class=HTMLResponse, name="app_page")
 async def app_page(request: Request):
     """Render the main grammar check app."""
     if not request.session.get("authenticated"):
-        return RedirectResponse(url="/login", status_code=303)
+        return RedirectResponse(url=request.url_for("login_page"), status_code=303)
     username = request.session.get("username", "User")
     template = env.get_template("index.html")
     return template.render(username=username)
 
 
-@app.get("/logout")
+@app.get("/logout", name="logout")
 async def logout(request: Request):
     """Handle logout."""
     request.session.clear()
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url=request.url_for("index"), status_code=303)
 
 
 @app.post("/api/check")
