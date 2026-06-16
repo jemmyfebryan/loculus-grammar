@@ -217,30 +217,61 @@
                     // Display multiple outputs
                     let outputHTML = '';
                     data.outputs.forEach((output, index) => {
-                        outputHTML += `<div style="margin-bottom: ${index < data.outputs.length - 1 ? '20px' : '0'}; padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;">`;
+                        const outputId = `output-${index}`;
+                        outputHTML += `<div style="margin-bottom: ${index < data.outputs.length - 1 ? '20px' : '0'}; padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333; position: relative;">`;
                         outputHTML += `<div style="margin-bottom: 12px;">`;
-                        outputHTML += `<div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 4px; white-space: nowrap;">Option ${index + 1}</div>`;
+                        outputHTML += `<div style="color: #0066cc; font-size: 14px; font-weight: 500; white-space: nowrap;">Option ${index + 1}</div>`;
                         if (output.explanation) {
-                            outputHTML += `<div style="color: #b0b0b0; font-size: 13px; line-height: 1.4;">${output.explanation}</div>`;
+                            outputHTML += `<div style="color: #b0b0b0; font-size: 13px; line-height: 1.4; margin-top: 4px;">${output.explanation}</div>`;
                         }
                         outputHTML += `</div>`;
-                        outputHTML += `<p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${output.text}</p>`;
+                        outputHTML += `<p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;" id="${outputId}">${output.text}</p>`;
+                        outputHTML += `<button class="copy-button" onclick="copyToClipboard('${outputId}')" data-output-id="${outputId}" style="position: absolute; bottom: 16px; right: 16px;" title="Copy">`;
+                        outputHTML += `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>`;
+                        outputHTML += `</button>`;
                         outputHTML += `</div>`;
                     });
                     correctedText.innerHTML = outputHTML;
                 } else if (showExplanations && data.explanation) {
                     correctedText.innerHTML = `
-                        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;">
+                        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333; position: relative;">
                             <div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 8px; white-space: nowrap;">Explanation</div>
                             <div style="color: #b0b0b0; font-size: 13px; margin-bottom: 16px; line-height: 1.5;">${data.explanation}</div>
                             <div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 8px; white-space: nowrap;">Corrected Text</div>
-                            <p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${data.corrected}</p>
+                            <p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;" id="single-output">${data.corrected}</p>
+                            <button class="copy-button" onclick="copyToClipboard('single-output')" style="position: absolute; bottom: 16px; right: 16px;" title="Copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
                         </div>
                     `;
                 } else if (data.corrected) {
-                    correctedText.innerHTML = `<div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;"><p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${data.corrected}</p></div>`;
+                    correctedText.innerHTML = `
+                        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333; position: relative;">
+                            <div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 8px; white-space: nowrap;">Corrected Text</div>
+                            <p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;" id="single-output">${data.corrected}</p>
+                            <button class="copy-button" onclick="copyToClipboard('single-output')" style="position: absolute; bottom: 16px; right: 16px;" title="Copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
                 } else {
-                    correctedText.innerHTML = `<div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;"><p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${result}</p></div>`;
+                    correctedText.innerHTML = `
+                        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333; position: relative;">
+                            <div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 8px; white-space: nowrap;">Corrected Text</div>
+                            <p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;" id="single-output">${result}</p>
+                            <button class="copy-button" onclick="copyToClipboard('single-output')" style="position: absolute; bottom: 16px; right: 16px;" title="Copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
                 }
                 resultDiv.style.display = 'block';
 
@@ -290,5 +321,31 @@
                 quoteModal.classList.remove('active');
             }
         });
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const button = document.querySelector(`[data-output-id="${elementId}"]`) || document.querySelector('.copy-button');
+                button.classList.add('copied');
+                button.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                `;
+
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    `;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
     </script>
 {% endblock %}
