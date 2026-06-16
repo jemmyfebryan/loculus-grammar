@@ -29,6 +29,7 @@ client = genai.Client(api_key=api_key)
 class GrammarCheckRequest(BaseModel):
     text: Annotated[str, Field(min_length=1, description="Text to check grammar for")]
     context: Optional[str] = Field(None, description="Additional context to improve grammar correction")
+    keep_writing_style: Optional[bool] = Field(False, description="Keep the original writing style")
 
 
 class GrammarCheckResponse(BaseModel):
@@ -36,11 +37,17 @@ class GrammarCheckResponse(BaseModel):
     corrected: str
 
 
-def get_grammar_correction(text: str, context: Optional[str] = None) -> str:
+def get_grammar_correction(text: str, context: Optional[str] = None, keep_writing_style: bool = False) -> str:
     """Get grammar correction using Gemini AI."""
+    if keep_writing_style:
+        style_instruction = "Maintain the original writing style, tone, and voice. Only fix grammar and spelling errors."
+    else:
+        style_instruction = ""
+
     if context:
         prompt = f"""Fix the grammar and spelling of the following text.
 Use this context to improve the correction: {context}
+{style_instruction}
 
 Only output the corrected text, no explanations or additional commentary.
 
@@ -49,6 +56,8 @@ Original text: {text}
 Corrected text:"""
     else:
         prompt = f"""Fix the grammar and spelling of the following text.
+{style_instruction}
+
 Only output the corrected text, no explanations or additional commentary.
 
 Original text: {text}
@@ -72,7 +81,8 @@ async def index(request: Request):
 @app.post("/api/check")
 async def api_check_grammar(request: GrammarCheckRequest):
     """Check and correct grammar via API."""
-    corrected = get_grammar_correction(request.text, request.context)
+    keep_writing_style = request.keep_writing_style if request.keep_writing_style is not None else False
+    corrected = get_grammar_correction(request.text, request.context, keep_writing_style)
     return {"original": request.text, "corrected": corrected}
 
 

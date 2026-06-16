@@ -85,6 +85,67 @@
             margin-bottom: 24px;
         }
 
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .advanced-toggle {
+            color: #0066cc;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .advanced-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .advanced-group {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin-bottom 0.3s ease-out;
+        }
+
+        .advanced-group.visible {
+            max-height: 200px;
+            opacity: 1;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .advanced-options-label {
+            color: #b0b0b0;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
         label {
             display: block;
             color: #b0b0b0;
