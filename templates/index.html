@@ -217,16 +217,30 @@
                     // Display multiple outputs
                     let outputHTML = '';
                     data.outputs.forEach((output, index) => {
-                        outputHTML += `<div style="margin-bottom: ${index < data.outputs.length - 1 ? '16px' : '0'};">`;
-                        outputHTML += `<div style="color: #888; font-size: 12px; margin-bottom: 4px;">Option ${index + 1}${output.explanation ? ': ' + output.explanation : ''}</div>`;
-                        outputHTML += `<p style="white-space: pre-wrap;">${output.text}</p>`;
+                        outputHTML += `<div style="margin-bottom: ${index < data.outputs.length - 1 ? '20px' : '0'}; padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;">`;
+                        outputHTML += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">`;
+                        outputHTML += `<div style="color: #0066cc; font-size: 14px; font-weight: 500;">Option ${index + 1}</div>`;
+                        if (output.explanation) {
+                            outputHTML += `<div style="color: #888; font-size: 12px;">${output.explanation}</div>`;
+                        }
+                        outputHTML += `</div>`;
+                        outputHTML += `<p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${output.text}</p>`;
                         outputHTML += `</div>`;
                     });
                     correctedText.innerHTML = outputHTML;
                 } else if (showExplanations && data.explanation) {
-                    correctedText.innerHTML = `<div style="color: #888; font-size: 12px; margin-bottom: 8px;">${data.explanation}</div><p style="white-space: pre-wrap;">${data.corrected}</p>`;
+                    correctedText.innerHTML = `
+                        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;">
+                            <div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Explanation</div>
+                            <div style="color: #b0b0b0; font-size: 13px; margin-bottom: 12px; line-height: 1.5;">${data.explanation}</div>
+                            <div style="color: #0066cc; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Corrected Text</div>
+                            <p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${data.corrected}</p>
+                        </div>
+                    `;
+                } else if (data.corrected) {
+                    correctedText.innerHTML = `<div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;"><p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${data.corrected}</p></div>`;
                 } else {
-                    correctedText.textContent = data.corrected;
+                    correctedText.innerHTML = `<div style="padding: 16px; background: #2a2a2a; border-radius: 8px; border: 1px solid #333;"><p style="white-space: pre-wrap; margin: 0; color: #e0e0e0;">${result}</p></div>`;
                 }
                 resultDiv.style.display = 'block';
 

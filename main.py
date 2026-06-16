@@ -68,37 +68,61 @@ def get_grammar_correction(text: str, context: Optional[str] = None, keep_writin
     else:
         custom_instruction = ""
 
-    if show_explanations:
-        explanation_instruction = "After providing the corrected text, briefly explain the main changes made."
-    else:
-        explanation_instruction = ""
-
     if multiple_outputs > 1:
-        outputs_instruction = f"Provide {multiple_outputs} different variations of the corrected text. Format each as 'Option N:' followed by the text."
+        if show_explanations:
+            format_instruction = f"""Provide exactly {multiple_outputs} different corrected versions as a JSON array.
+Each element must have:
+- "text": the corrected text
+- "explanation": brief explanation of changes
+
+Response format:
+[
+  {{"text": "corrected version 1", "explanation": "explanation 1"}},
+  {{"text": "corrected version 2", "explanation": "explanation 2"}}
+]
+Only output the JSON array, nothing else."""
+        else:
+            format_instruction = f"""Provide exactly {multiple_outputs} different corrected versions as a JSON array.
+Each element must have:
+- "text": the corrected text
+
+Response format:
+[
+  {{"text": "corrected version 1"}},
+  {{"text": "corrected version 2"}}
+]
+Only output the JSON array, nothing else."""
+    elif show_explanations:
+        format_instruction = """Provide the corrected text as JSON with:
+- "text": the corrected text
+- "explanation": brief explanation of changes
+
+Response format:
+{"text": "corrected text", "explanation": "explanation"}
+Only output the JSON object, nothing else."""
     else:
-        outputs_instruction = ""
+        format_instruction = """Provide only the corrected text as plain JSON.
+Response format:
+{"text": "corrected text"}
+Only output the JSON object, nothing else."""
 
     if context:
         prompt = f"""Fix the grammar and spelling of the following text.
 Use this context to improve the correction: {context}
 {style_instruction}
 {custom_instruction}
-{explanation_instruction}
-{outputs_instruction}
 
-Original text: {text}
+{format_instruction}
 
-Corrected text:"""
+Original text: {text}"""
     else:
         prompt = f"""Fix the grammar and spelling of the following text.
 {style_instruction}
 {custom_instruction}
-{explanation_instruction}
-{outputs_instruction}
 
-Original text: {text}
+{format_instruction}
 
-Corrected text:"""
+Original text: {text}"""
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
@@ -106,48 +130,38 @@ Corrected text:"""
     )
     result = response.text.strip()
 
-    # Parse the response based on options
-    if multiple_outputs > 1:
-        outputs = []
-        lines = result.split('\n')
-        current_output = []
-        current_explanation = None
+    # Parse JSON response
+    try:
+        # Remove markdown code blocks if present
+        result = result.strip()
+        if result.startswith('```'):
+            result = '\n'.join(result.split('\n')[1:-1])
+            result = result.strip()
+        # Remove json prefix if present
+        if result.lower().startswith('json'):
+            result = result[4:].strip()
 
-        for line in lines:
-            line = line.strip()
-            if line.lower().startswith('option ') or line.lower().startswith('option'):
-                if current_output:
-                    text = '\n'.join(current_output).strip()
-                    outputs.append(GrammarOutput(text=text, explanation=current_explanation))
-                current_output = []
-                current_explanation = None
-                # Extract explanation if present in same line
-                if ':' in line:
-                    parts = line.split(':', 1)
-                    if len(parts) > 1 and parts[1].strip():
-                        current_explanation = parts[1].strip()
-            else:
-                current_output.append(line)
+        import json
+        data = json.loads(result)
 
-        if current_output:
-            text = '\n'.join(current_output).strip()
-            outputs.append(GrammarOutput(text=text, explanation=current_explanation))
-
-        return {"outputs": outputs}
-    elif show_explanations:
-        # Split explanation and corrected text
-        if '\n\n' in result:
-            parts = result.split('\n\n', 1)
-            explanation = parts[0].strip()
-            corrected = parts[1].strip() if len(parts) > 1 else parts[0].strip()
+        if multiple_outputs > 1:
+            outputs = []
+            for item in data:
+                if isinstance(item, dict):
+                    text = item.get('text', '')
+                    explanation = item.get('explanation')
+                    outputs.append(GrammarOutput(text=text, explanation=explanation))
+            return {"outputs": outputs}
+        elif show_explanations:
+            return {"corrected": data.get('text', result), "explanation": data.get('explanation')}
         else:
-            lines = result.split('\n', 1)
-            explanation = lines[0].strip() if len(lines) > 1 else None
-            corrected = lines[1].strip() if len(lines) > 1 else result
-
-        return {"corrected": corrected, "explanation": explanation}
-    else:
-        return {"corrected": result}
+            return {"corrected": data.get('text', result)}
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        # Fallback to plain text if JSON parsing fails
+        if multiple_outputs > 1 or show_explanations:
+            return {"corrected": result, "error": "Failed to parse structured output"}
+        else:
+            return {"corrected": result}
 
 
 @app.get("/")
