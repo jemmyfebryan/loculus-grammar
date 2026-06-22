@@ -50,6 +50,12 @@ def load_credentials():
         return []
 
 
+def save_credentials(users):
+    """Save grid credentials to JSON file."""
+    with open(CREDENTIALS_FILE, 'w') as f:
+        json.dump({"users": users}, f, indent=2)
+
+
 class Coordinate(BaseModel):
     """Coordinate in the grid."""
     x: int
@@ -59,6 +65,13 @@ class Coordinate(BaseModel):
 class GridAuthRequest(BaseModel):
     """Grid authentication request."""
     sequence: list[Coordinate] = Field(..., min_length=5, description="Ordered sequence of grid coordinates")
+
+
+class ChangePasswordRequest(BaseModel):
+    """Change password request."""
+    action: str = Field(..., description="Action: 'verify_current' or 'change_password'")
+    sequence: Optional[list[Coordinate]] = Field(None, description="Current password sequence for verification")
+    new_sequence: Optional[list[Coordinate]] = Field(None, description="New password sequence")
 
 
 class GrammarCheckRequest(BaseModel):
@@ -242,6 +255,70 @@ async def grid_login(request: Request, auth_data: GridAuthRequest):
         content={"success": False, "error": "Invalid pattern"},
         status_code=401
     )
+
+
+@app.post("/change-password", name="change_password")
+async def change_password(request: Request, req: ChangePasswordRequest):
+    """Handle password change."""
+    if not request.session.get("authenticated"):
+        return JSONResponse(
+            content={"success": False, "error": "Not authenticated"},
+            status_code=401
+        )
+
+    username = request.session.get("username")
+    users = load_credentials()
+
+    # Find current user
+    user = next((u for u in users if u.get("name") == username), None)
+    if not user:
+        return JSONResponse(
+            content={"success": False, "error": "User not found"},
+            status_code=404
+        )
+
+    if req.action == "verify_current":
+        # Verify current password
+        if not req.sequence:
+            return JSONResponse(
+                content={"valid": False, "error": "No sequence provided"},
+                status_code=400
+            )
+
+        stored_pattern = user.get("pattern", [])
+
+        if len(req.sequence) != len(stored_pattern):
+            return JSONResponse({"valid": False})
+
+        # Check each coordinate
+        for i, coord in enumerate(req.sequence):
+            stored_coord = stored_pattern[i]
+            if coord.x != stored_coord["x"] or coord.y != stored_coord["y"]:
+                return JSONResponse({"valid": False})
+
+        return JSONResponse({"valid": True})
+
+    elif req.action == "change_password":
+        # Change password
+        if not req.new_sequence or len(req.new_sequence) < 5:
+            return JSONResponse(
+                content={"success": False, "error": "New pattern must be at least 5 cells"},
+                status_code=400
+            )
+
+        # Update user's pattern
+        user["pattern"] = [{"x": coord.x, "y": coord.y} for coord in req.new_sequence]
+
+        # Save to file
+        save_credentials(users)
+
+        return JSONResponse({"success": True})
+
+    else:
+        return JSONResponse(
+            content={"success": False, "error": "Invalid action"},
+            status_code=400
+        )
 
 
 @app.get("/app", response_class=HTMLResponse, name="app_page")
