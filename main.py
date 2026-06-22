@@ -206,7 +206,7 @@ Original text: {text}"""
 async def index(request: Request):
     """Redirect to login or app based on auth status."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("app_page"), status_code=303)
+        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("grammar_page"), status_code=303)
     return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("login_page"), status_code=303)
 
 
@@ -214,7 +214,7 @@ async def index(request: Request):
 async def login_page(request: Request):
     """Render the login page."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("app_page"), status_code=303)
+        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("grammar_page"), status_code=303)
     template = env.get_template("login.html")
     return template.render(ROOT_PATH=ROOT_PATH)
 
@@ -247,7 +247,7 @@ async def grid_login(request: Request, auth_data: GridAuthRequest):
 
             return JSONResponse({
                 "success": True,
-                "redirect_url": f"{ROOT_PATH}/app"
+                "redirect_url": f"{ROOT_PATH}/grammar"
             })
 
     # No pattern matched
@@ -321,8 +321,8 @@ async def change_password(request: Request, req: ChangePasswordRequest):
         )
 
 
-@app.get("/app", response_class=HTMLResponse, name="app_page")
-async def app_page(request: Request):
+@app.get("/grammar", response_class=HTMLResponse, name="grammar_page")
+async def grammar_page(request: Request):
     """Render the main grammar check app."""
     if not request.session.get("authenticated"):
         return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("login_page"), status_code=303)
