@@ -12,11 +12,19 @@ def get_grammar_correction(
     text: str,
     context: Optional[str] = None,
     keep_writing_style: bool = False,
+    preserve_formatting: bool = True,
     custom_instructions: Optional[str] = None,
     show_explanations: bool = False,
     multiple_outputs: int = 1
 ) -> dict:
     """Get grammar correction using Gemini AI."""
+
+    # Base instruction to preserve formatting (optional)
+    if preserve_formatting:
+        format_preservation = "IMPORTANT: Preserve all original formatting including line breaks, paragraph structure, and spacing. Only fix grammar, spelling, and punctuation errors."
+    else:
+        format_preservation = ""
+
     if keep_writing_style:
         style_instruction = "Maintain the original writing style, tone, and voice. Only fix grammar and spelling errors."
     else:
@@ -67,6 +75,7 @@ Only output the JSON object, nothing else."""
 
     if context:
         prompt = f"""Fix the grammar and spelling of the following text.
+{format_preservation}
 Use this context to improve the correction: {context}
 {style_instruction}
 {custom_instruction}
@@ -76,6 +85,7 @@ Use this context to improve the correction: {context}
 Original text: \"\"\"{text}\"\"\""""
     else:
         prompt = f"""Fix the grammar and spelling of the following text.
+{format_preservation}
 {style_instruction}
 {custom_instruction}
 
@@ -115,7 +125,7 @@ Original text: \"\"\"{text}\"\"\""""
             return {"corrected": data.get('text', result), "explanation": data.get('explanation')}
         else:
             return {"corrected": data.get('text', result)}
-    except (json.JSONDecodeError, KeyError, TypeError) as e:
+    except (json.JSONDecodeError, KeyError, TypeError):
         # Fallback to plain text if JSON parsing fails
         if multiple_outputs > 1 or show_explanations:
             return {"corrected": result, "error": "Failed to parse structured output"}

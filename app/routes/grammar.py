@@ -30,6 +30,7 @@ async def grammar_page(request: Request):
 async def api_check_grammar(request: GrammarCheckRequest):
     """Check and correct grammar via API."""
     keep_writing_style = request.keep_writing_style if request.keep_writing_style is not None else False
+    preserve_formatting = request.preserve_formatting if request.preserve_formatting is not None else True
     show_explanations = request.show_explanations if request.show_explanations is not None else False
     multiple_outputs = request.multiple_outputs if request.multiple_outputs is not None else 1
 
@@ -37,6 +38,7 @@ async def api_check_grammar(request: GrammarCheckRequest):
         request.text,
         request.context,
         keep_writing_style,
+        preserve_formatting,
         request.custom_instructions,
         show_explanations,
         multiple_outputs

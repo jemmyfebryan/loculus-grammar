@@ -1,5 +1,5 @@
 """Authentication routes."""
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from jinja2 import Environment
 from app.config import ROOT_PATH

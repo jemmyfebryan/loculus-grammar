@@ -40,6 +40,10 @@
                 <label for="keepWritingStyle">Keep the writing style</label>
             </div>
             <div class="checkbox-group">
+                <input type="checkbox" id="preserveFormatting" name="preserveFormatting">
+                <label for="preserveFormatting">Preserve formatting (line breaks, paragraphs)</label>
+            </div>
+            <div class="checkbox-group">
                 <input type="checkbox" id="showExplanations" name="showExplanations">
                 <label for="showExplanations">Show Explanations</label>
             </div>
@@ -105,6 +109,7 @@
         const advancedToggle = document.getElementById('advancedToggle');
         const advancedGroup = document.getElementById('advancedGroup');
         const keepWritingStyleCheckbox = document.getElementById('keepWritingStyle');
+        const preserveFormattingCheckbox = document.getElementById('preserveFormatting');
         const showExplanationsCheckbox = document.getElementById('showExplanations');
         const multipleOutputsCheckbox = document.getElementById('multipleOutputs');
         const outputCountSlider = document.getElementById('outputCount');
@@ -163,6 +168,7 @@
 
             const context = contextTextarea.value.trim();
             const keepWritingStyle = keepWritingStyleCheckbox.checked;
+            const preserveFormatting = preserveFormattingCheckbox.checked;
             const showExplanations = showExplanationsCheckbox.checked;
             const multipleOutputs = multipleOutputsCheckbox.checked ? parseInt(outputCountSlider.value) : 1;
 
@@ -170,6 +176,7 @@
                 text,
                 context,
                 keep_writing_style: keepWritingStyle,
+                preserve_formatting: preserveFormatting,
                 show_explanations: showExplanations,
                 multiple_outputs: multipleOutputs
             };

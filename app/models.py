@@ -25,6 +25,7 @@ class GrammarCheckRequest(BaseModel):
     text: Annotated[str, Field(min_length=1, description="Text to check grammar for")]
     context: Optional[str] = Field(None, description="Additional context to improve grammar correction")
     keep_writing_style: Optional[bool] = Field(False, description="Keep the original writing style")
+    preserve_formatting: Optional[bool] = Field(True, description="Preserve formatting (line breaks, paragraphs)")
     custom_instructions: Optional[str] = Field(None, description="Custom instructions for grammar correction")
     show_explanations: Optional[bool] = Field(False, description="Show explanations for corrections")
     multiple_outputs: Optional[int] = Field(1, ge=1, le=5, description="Number of alternative outputs (1-5)")
