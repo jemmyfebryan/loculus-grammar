@@ -388,10 +388,53 @@
             opacity: 1;
             margin-top: 12px;
         }
+
+        .navbar {
+            background: #242424;
+            border: 1px solid #333;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .navbar-nav {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar-nav li a {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .navbar-nav li a:hover {
+            background: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        .navbar-nav li a.active {
+            background: #0066cc;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        {% if authenticated %}
+        <nav class="navbar">
+            <ul class="navbar-nav">
+                <li><a href="{{ ROOT_PATH }}/grammar" {% if page == 'grammar' %}class="active"{% endif %}>Grammar Check</a></li>
+                <li><a href="{{ ROOT_PATH }}/profile" {% if page == 'profile' %}class="active"{% endif %}>Profile</a></li>
+            </ul>
+        </nav>
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 </body>

@@ -204,9 +204,9 @@ Original text: {text}"""
 
 @app.get("/", name="index")
 async def index(request: Request):
-    """Redirect to login or app based on auth status."""
+    """Redirect to login or grammar page based on auth status."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("grammar_page"), status_code=303)
+        return RedirectResponse(url=f"{ROOT_PATH}/grammar", status_code=303)
     return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("login_page"), status_code=303)
 
 
@@ -328,7 +328,17 @@ async def grammar_page(request: Request):
         return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("login_page"), status_code=303)
     username = request.session.get("username", "User")
     template = env.get_template("index.html")
-    return template.render(username=username)
+    return template.render(username=username, authenticated=True, page="grammar", ROOT_PATH=ROOT_PATH)
+
+
+@app.get("/profile", response_class=HTMLResponse, name="profile_page")
+async def profile_page(request: Request):
+    """Render the profile page."""
+    if not request.session.get("authenticated"):
+        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("login_page"), status_code=303)
+    username = request.session.get("username", "User")
+    template = env.get_template("profile.html")
+    return template.render(username=username, authenticated=True, page="profile", ROOT_PATH=ROOT_PATH)
 
 
 @app.get("/logout", name="logout")

@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Loculus AI Grammar{% endblock %}
+
+{% block content %}
+    <h1>Profile</h1>
+    <p class="subtitle">Manage your account settings</p>
+
+    <div style="background: #1a1a1a; border: 1px solid #333; padding: 24px; border-radius: 8px; margin-top: 24px;">
+        <h2 style="color: #e0e0e0; font-size: 18px; margin-bottom: 8px;">Account Information</h2>
+        <p style="color: #888; font-size: 14px; margin-bottom: 24px;">
+            Username: <span style="color: #e0e0e0;">{{ username }}</span>
+        </p>
+
+        <div style="border-top: 1px solid #333; padding-top: 24px;">
+            <h3 style="color: #e0e0e0; font-size: 16px; margin-bottom: 16px;">Actions</h3>
+
+            <button id="changePasswordBtn" style="background: #0066cc; color: white; border: none; padding: 12px 24px; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 4px; margin-bottom: 12px; width: auto;">
+                Change Grid Password
+            </button>
+
+            <a href="{{ ROOT_PATH }}/logout" style="display: inline-block; background: #444; color: #e0e0e0; padding: 12px 24px; font-size: 14px; font-weight: 500; text-decoration: none; border-radius: 4px; transition: background 0.2s ease;">
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Change Grid Password</h3>
+                <button class="modal-close" id="changePasswordClose">&times;</button>
+            </div>
+            <div id="changePasswordContent">
+                <div class="password-step" id="step1">
+                    <p style="color: #888; margin-bottom: 16px;">Enter your current grid password pattern:</p>
+                    <div class="grid" id="currentGrid"></div>
+                    <button type="button" class="clear-btn" id="clearCurrentBtn" style="margin-bottom: 12px;">Clear Pattern</button>
+                    <button type="button" id="verifyCurrentBtn" style="background: #0066cc;">Verify Current Password</button>
+                </div>
+                <div class="password-step" id="step2" style="display: none;">
+                    <p style="color: #888; margin-bottom: 16px;">Enter your new grid password pattern:</p>
+                    <div class="grid" id="newGrid"></div>
+                    <button type="button" class="clear-btn" id="clearNewBtn" style="margin-bottom: 12px;">Clear Pattern</button>
+                    <button type="button" id="setNewBtn" style="background: #0066cc;">Set New Password</button>
+                </div>
+                <div class="password-step" id="step3" style="display: none;">
+                    <p style="color: #888; margin-bottom: 16px;">Re-enter your new grid password pattern to confirm:</p>
+                    <div class="grid" id="confirmGrid"></div>
+                    <button type="button" class="clear-btn" id="clearConfirmBtn" style="margin-bottom: 12px;">Clear Pattern</button>
+                    <button type="button" id="confirmChangeBtn" style="background: #0066cc;">Confirm Password Change</button>
+                </div>
+                <div id="passwordError" style="color: #ff6b6b; margin-top: 12px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0;
+            margin-bottom: 16px;
+        }
+
+        .grid-cell {
+            aspect-ratio: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0066cc;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .grid-cell:hover {
+            border-color: #0066cc;
+            background: #2a2a2a;
+        }
+
+        .grid-cell.active {
+            background: #0066cc;
+            border-color: #0066cc;
+            color: white;
+        }
+
+        .grid-cell.active:hover {
+            background: #0052a3;
+            border-color: #0052a3;
+        }
+
+        .clear-btn {
+            background: #444;
+            margin-top: 10px;
+            margin-right: 8px;
+            width: auto;
+            padding: 8px 16px;
+        }
+
+        .clear-btn:hover {
+            background: #555;
+        }
+
+        .password-step button:not(.clear-btn) {
+            margin-bottom: 12px;
+        }
+
+        a:hover {
+            background: #555;
+        }
+    </style>
+
+    <script>
+        const ROOT_PATH = {{ '"' + ROOT_PATH + '"' if ROOT_PATH else '""' }};
+
+        // Change Password Functionality
+        const GRID_SIZE = 5;
+        let currentSequence = [];
+        let newSequence = [];
+        let confirmSequence = [];
+        let isDragging = false;
+
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        const changePasswordClose = document.getElementById('changePasswordClose');
+        const passwordError = document.getElementById('passwordError');
+
+        // Step elements
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+
+        // Grid containers
+        const currentGrid = document.getElementById('currentGrid');
+        const newGrid = document.getElementById('newGrid');
+        const confirmGrid = document.getElementById('confirmGrid');
+
+        // Buttons
+        const verifyCurrentBtn = document.getElementById('verifyCurrentBtn');
+        const setNewBtn = document.getElementById('setNewBtn');
+        const confirmChangeBtn = document.getElementById('confirmChangeBtn');
+        const clearCurrentBtn = document.getElementById('clearCurrentBtn');
+        const clearNewBtn = document.getElementById('clearNewBtn');
+        const clearConfirmBtn = document.getElementById('clearConfirmBtn');
+
+        // Initialize grids
+        function initPasswordGrid(container, sequenceVar) {
+            container.innerHTML = '';
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.dataset.seq = sequenceVar;
+                    cell.addEventListener('mousedown', handlePasswordCellStart);
+                    cell.addEventListener('mouseenter', handlePasswordCellEnter);
+                    cell.addEventListener('touchstart', handlePasswordTouchStart, { passive: false });
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function handlePasswordCellStart(event) {
+            event.preventDefault();
+            isDragging = true;
+            const seqVar = event.currentTarget.dataset.seq;
+            addPasswordCellToSequence(event.currentTarget, seqVar);
+        }
+
+        function handlePasswordCellEnter(event) {
+            if (isDragging) {
+                const seqVar = event.currentTarget.dataset.seq;
+                addPasswordCellToSequence(event.currentTarget, seqVar);
+            }
+        }
+
+        function handlePasswordTouchStart(event) {
+            event.preventDefault();
+            isDragging = true;
+            const touch = event.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            const seqVar = event.currentTarget.dataset.seq;
+            if (cell && cell.classList.contains('grid-cell') && cell.dataset.seq === seqVar) {
+                addPasswordCellToSequence(cell, seqVar);
+            }
+        }
+
+        function handlePasswordTouchMove(event) {
+            if (!isDragging) return;
+            event.preventDefault();
+            const touch = event.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (cell && cell.classList.contains('grid-cell')) {
+                addPasswordCellToSequence(cell, cell.dataset.seq);
+            }
+        }
+
+        function addPasswordCellToSequence(cell, seqVar) {
+            const x = parseInt(cell.dataset.x);
+            const y = parseInt(cell.dataset.y);
+            const sequence = seqVar === 'current' ? currentSequence : seqVar === 'new' ? newSequence : confirmSequence;
+
+            const existingIndex = sequence.findIndex(item => item.x === x && item.y === y);
+            if (existingIndex !== -1) return;
+
+            sequence.push({ x, y });
+            updatePasswordGrid(cell.parentElement, sequence);
+        }
+
+        function updatePasswordGrid(container, sequence) {
+            const cells = container.querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const index = sequence.findIndex(item => item.x === x && item.y === y);
+
+                if (index !== -1) {
+                    cell.classList.add('active');
+                    cell.textContent = index + 1;
+                } else {
+                    cell.classList.remove('active');
+                    cell.textContent = '';
+                }
+            });
+        }
+
+        function clearPasswordSequence(sequence) {
+            sequence.length = 0;
+        }
+
+        // Modal handlers
+        changePasswordBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            changePasswordModal.classList.add('active');
+            resetPasswordChange();
+            initPasswordGrid(currentGrid, 'current');
+            initPasswordGrid(newGrid, 'new');
+            initPasswordGrid(confirmGrid, 'confirm');
+        });
+
+        changePasswordClose.addEventListener('click', () => {
+            changePasswordModal.classList.remove('active');
+        });
+
+        changePasswordModal.addEventListener('click', (e) => {
+            if (e.target === changePasswordModal) {
+                changePasswordModal.classList.remove('active');
+            }
+        });
+
+        // Clear buttons
+        clearCurrentBtn.addEventListener('click', () => {
+            clearPasswordSequence(currentSequence);
+            updatePasswordGrid(currentGrid, currentSequence);
+            passwordError.style.display = 'none';
+        });
+
+        clearNewBtn.addEventListener('click', () => {
+            clearPasswordSequence(newSequence);
+            updatePasswordGrid(newGrid, newSequence);
+            passwordError.style.display = 'none';
+        });
+
+        clearConfirmBtn.addEventListener('click', () => {
+            clearPasswordSequence(confirmSequence);
+            updatePasswordGrid(confirmGrid, confirmSequence);
+            passwordError.style.display = 'none';
+        });
+
+        // Verify current password
+        verifyCurrentBtn.addEventListener('click', async () => {
+            if (currentSequence.length < 5) {
+                showPasswordError('Please select at least 5 cells');
+                return;
+            }
+
+            try {
+                const response = await fetch(ROOT_PATH + '/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'verify_current', sequence: currentSequence })
+                });
+
+                const data = await response.json();
+                if (data.valid) {
+                    step1.style.display = 'none';
+                    step2.style.display = 'block';
+                    passwordError.style.display = 'none';
+                } else {
+                    showPasswordError('Current password is incorrect');
+                }
+            } catch (error) {
+                showPasswordError('Error verifying password');
+            }
+        });
+
+        // Set new password
+        setNewBtn.addEventListener('click', () => {
+            if (newSequence.length < 5) {
+                showPasswordError('Please select at least 5 cells');
+                return;
+            }
+            step2.style.display = 'none';
+            step3.style.display = 'block';
+            passwordError.style.display = 'none';
+        });
+
+        // Confirm password change
+        confirmChangeBtn.addEventListener('click', async () => {
+            if (confirmSequence.length < 5) {
+                showPasswordError('Please select at least 5 cells');
+                return;
+            }
+
+            if (newSequence.length !== confirmSequence.length) {
+                showPasswordError('Patterns do not match - length is different');
+                return;
+            }
+
+            for (let i = 0; i < newSequence.length; i++) {
+                if (newSequence[i].x !== confirmSequence[i].x || newSequence[i].y !== confirmSequence[i].y) {
+                    showPasswordError('Patterns do not match');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(ROOT_PATH + '/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'change_password', new_sequence: newSequence })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    changePasswordModal.classList.remove('active');
+                    alert('Password changed successfully!');
+                } else {
+                    showPasswordError(data.error || 'Error changing password');
+                }
+            } catch (error) {
+                showPasswordError('Error changing password');
+            }
+        });
+
+        function showPasswordError(message) {
+            passwordError.textContent = message;
+            passwordError.style.display = 'block';
+        }
+
+        function resetPasswordChange() {
+            clearPasswordSequence(currentSequence);
+            clearPasswordSequence(newSequence);
+            clearPasswordSequence(confirmSequence);
+            step1.style.display = 'block';
+            step2.style.display = 'none';
+            step3.style.display = 'none';
+            passwordError.style.display = 'none';
+        }
+
+        // Touch events
+        document.addEventListener('mouseup', () => { isDragging = false; });
+        document.addEventListener('touchend', () => { isDragging = false; });
+        document.addEventListener('touchmove', handlePasswordTouchMove, { passive: false });
+    </script>
+{% endblock %}
