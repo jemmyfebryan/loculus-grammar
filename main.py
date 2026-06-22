@@ -17,7 +17,7 @@ from starlette.middleware.sessions import SessionMiddleware
 load_dotenv()
 
 SECRET_KEY = token_hex(32)
-CREDENTIALS_FILE = "grid_credentials.json"
+CREDENTIALS_FILE = "database/grid_credentials.json"
 
 app = FastAPI(title="Grammar Check", description="Simple grammar checker using AI", root_path=os.getenv("FASTAPI_ROOT_PATH", ""))
 
