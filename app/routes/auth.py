@@ -57,6 +57,7 @@ async def grid_login(request: Request, auth_data: GridAuthRequest):
         # If pattern matches, authenticate this user
         if is_match:
             request.session["authenticated"] = True
+            request.session["user_id"] = user.get("id", "user")
             request.session["username"] = user.get("name", user.get("id", "User"))
 
             return JSONResponse({

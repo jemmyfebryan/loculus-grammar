@@ -1,6 +1,7 @@
 """Pydantic models for request and response validation."""
 from typing import Annotated, Optional
 from pydantic import BaseModel, Field
+from datetime import datetime
 
 
 class Coordinate(BaseModel):
@@ -41,3 +42,48 @@ class GrammarCheckResponse(BaseModel):
     corrected: Optional[str] = None
     explanation: Optional[str] = None
     outputs: Optional[list[GrammarOutput]] = None
+
+
+# Library Models
+
+class LibraryCreateRequest(BaseModel):
+    """Request to create a new library."""
+    name: Annotated[str, Field(min_length=1, max_length=100, description="Library name")]
+    description: Annotated[str, Field(max_length=500, description="Library description")] = ""
+
+
+class LibraryUpdateRequest(BaseModel):
+    """Request to update a library."""
+    name: Annotated[str, Field(min_length=1, max_length=100, description="Library name")]
+    description: Annotated[str, Field(max_length=500, description="Library description")] = ""
+
+
+class Library(BaseModel):
+    """Library model."""
+    id: str
+    name: str
+    description: str
+    created_at: str
+    updated_at: str
+    text_count: int = 0
+
+
+# Text Models
+
+class TextCreateRequest(BaseModel):
+    """Request to create a new text."""
+    content: Annotated[str, Field(min_length=1, description="Text content")]
+
+
+class TextUpdateRequest(BaseModel):
+    """Request to update a text."""
+    content: Annotated[str, Field(min_length=1, description="Text content")]
+
+
+class Text(BaseModel):
+    """Text model."""
+    id: str
+    library_id: str
+    content: str
+    created_at: str
+    updated_at: str

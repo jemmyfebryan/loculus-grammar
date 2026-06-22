@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from jinja2 import Environment, FileSystemLoader
 
 from app.config import SECRET_KEY, ROOT_PATH
-from app.routes import auth, grammar, profile
+from app.routes import auth, grammar, profile, library
 
 # Initialize Jinja2
 _template_env = Environment(loader=FileSystemLoader("templates"))
@@ -32,6 +32,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 # Include routers
 app.include_router(auth.router, tags=["auth"])
 app.include_router(grammar.router, tags=["grammar"])
+app.include_router(library.router, tags=["library"])
 app.include_router(profile.router, tags=["profile"])
 
 

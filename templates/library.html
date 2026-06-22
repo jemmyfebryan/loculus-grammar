@@ -1,0 +1,699 @@
+{% extends "base.html" %}
+
+{% block title %}Library - Loculus AI Grammar{% endblock %}
+
+{% block content %}
+    <h1>My Library</h1>
+    <p class="subtitle">Manage your text collections</p>
+
+    <!-- Libraries View -->
+    <div id="librariesView">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="font-size: 18px; color: #e0e0e0; font-weight: 500;">My Libraries</h2>
+            <button id="createLibraryBtn" style="padding: 10px 20px; font-size: 14px;">+ New Library</button>
+        </div>
+
+        <div id="librariesList" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Libraries will be loaded here -->
+        </div>
+
+        <div id="noLibraries" style="text-align: center; padding: 40px; color: #888; display: none;">
+            <p style="margin-bottom: 16px;">No libraries yet. Create your first library to get started!</p>
+        </div>
+    </div>
+
+    <!-- Texts View -->
+    <div id="textsView" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="backToLibrariesBtn" style="padding: 10px 20px; font-size: 14px; background: #333;">
+                    ← Back
+                </button>
+                <h2 id="currentLibraryName" style="font-size: 18px; color: #e0e0e0; font-weight: 500;">Library Name</h2>
+            </div>
+            <button id="createTextBtn" style="padding: 10px 20px; font-size: 14px;">+ New Text</button>
+        </div>
+
+        <div id="textsList" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Texts will be loaded here -->
+        </div>
+
+        <div id="noTexts" style="text-align: center; padding: 40px; color: #888; display: none;">
+            <p style="margin-bottom: 16px;">No texts in this library yet. Add your first text!</p>
+        </div>
+    </div>
+
+    <!-- Create/Edit Library Modal -->
+    <div id="libraryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="libraryModalTitle">Create New Library</h3>
+                <button class="modal-close" id="libraryModalClose">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="libraryName" style="margin-bottom: 8px;">Name *</label>
+                <input
+                    type="text"
+                    id="libraryName"
+                    placeholder="Enter library name"
+                    maxlength="100"
+                    required
+                    style="width: 100%; padding: 12px; border: 1px solid #444; background: #1a1a1a; color: #e0e0e0; font-size: 15px; font-family: inherit;">
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="libraryDescription" style="margin-bottom: 8px;">Description</label>
+                <textarea
+                    id="libraryDescription"
+                    placeholder="Enter library description (optional)"
+                    maxlength="500"
+                    style="min-height: 80px;"
+                    rows="3"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="libraryModalCancel" style="background: #333;">Cancel</button>
+                <button type="button" id="libraryModalSubmit">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Text Modal -->
+    <div id="textModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="textModalTitle">Create New Text</h3>
+                <button class="modal-close" id="textModalClose">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="textContent" style="margin-bottom: 8px;">Content *</label>
+                <textarea
+                    id="textContent"
+                    placeholder="Enter your text content"
+                    required
+                    style="min-height: 200px;"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="textModalCancel" style="background: #333;">Cancel</button>
+                <button type="button" id="textModalSubmit">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 style="color: #e0e0e0; font-size: 18px; font-weight: 500; margin: 0;">Confirm Delete</h3>
+                <button class="modal-close" id="confirmModalClose">&times;</button>
+            </div>
+            <p id="confirmModalMessage" style="color: #b0b0b0; margin-bottom: 20px; line-height: 1.5;">Are you sure you want to delete this item?</p>
+            <div class="modal-buttons">
+                <button type="button" id="confirmModalCancel" style="background: #333;">Cancel</button>
+                <button type="button" id="confirmModalSubmit" style="background: #cc4444;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Text Modal -->
+    <div id="viewTextModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 style="color: #e0e0e0; font-size: 18px; font-weight: 500; margin: 0;">View Text</h3>
+                <button class="modal-close" id="viewTextModalClose">&times;</button>
+            </div>
+            <div id="viewTextContent" style="color: #b0b0b0; line-height: 1.6; white-space: pre-wrap; max-height: 400px; overflow-y: auto; padding: 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; margin-bottom: 16px;"></div>
+            <div class="modal-buttons">
+                <button type="button" id="viewTextModalCloseBtn" style="background: #333;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .library-card {
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .library-card:hover {
+            background: #333;
+            border-color: #444;
+        }
+
+        .library-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .library-card-title {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .library-card-description {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .library-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .library-card-count {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .library-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-action-btn {
+            background: none;
+            border: none;
+            color: #0066cc;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .card-action-btn:hover {
+            text-decoration: underline;
+        }
+
+        .card-action-btn.delete {
+            color: #cc4444;
+        }
+
+        .text-card {
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .text-card:hover {
+            background: #333;
+            border-color: #444;
+        }
+
+        .text-card-title {
+            color: #e0e0e0;
+            font-size: 15px;
+            font-weight: 500;
+            margin: 0 0 8px 0;
+        }
+
+        .text-card-preview {
+            color: #b0b0b0;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .text-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .text-card-date {
+            color: #666;
+            font-size: 11px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .error-message {
+            background: #3d1a1a;
+            border: 1px solid #662222;
+            color: #ff8888;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+    </style>
+
+    <script>
+        // State
+        let currentLibraryId = null;
+        let editingLibraryId = null;
+        let editingTextId = null;
+        let deleteCallback = null;
+
+        // DOM Elements
+        const librariesView = document.getElementById('librariesView');
+        const textsView = document.getElementById('textsView');
+        const librariesList = document.getElementById('librariesList');
+        const textsList = document.getElementById('textsList');
+        const noLibraries = document.getElementById('noLibraries');
+        const noTexts = document.getElementById('noTexts');
+        const currentLibraryName = document.getElementById('currentLibraryName');
+
+        // Library Modal Elements
+        const libraryModal = document.getElementById('libraryModal');
+        const libraryModalTitle = document.getElementById('libraryModalTitle');
+        const libraryNameInput = document.getElementById('libraryName');
+        const libraryDescInput = document.getElementById('libraryDescription');
+        const createLibraryBtn = document.getElementById('createLibraryBtn');
+
+        // Text Modal Elements
+        const textModal = document.getElementById('textModal');
+        const textModalTitle = document.getElementById('textModalTitle');
+        const textContentInput = document.getElementById('textContent');
+        const createTextBtn = document.getElementById('createTextBtn');
+
+        // Confirm Modal Elements
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmModalMessage = document.getElementById('confirmModalMessage');
+
+        // View Text Modal Elements
+        const viewTextModal = document.getElementById('viewTextModal');
+        const viewTextContent = document.getElementById('viewTextContent');
+
+        // Load libraries on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLibraries();
+        });
+
+        // Navigation
+        document.getElementById('backToLibrariesBtn').addEventListener('click', () => {
+            showLibrariesView();
+        });
+
+        function showLibrariesView() {
+            librariesView.style.display = 'block';
+            textsView.style.display = 'none';
+            currentLibraryId = null;
+            loadLibraries();
+        }
+
+        function showTextViews(library) {
+            librariesView.style.display = 'none';
+            textsView.style.display = 'block';
+            currentLibraryId = library.id;
+            currentLibraryName.textContent = library.name;
+            loadTexts(library.id);
+        }
+
+        // Library Functions
+        async function loadLibraries() {
+            librariesList.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const response = await fetch('api/libraries');
+                if (!response.ok) throw new Error('Failed to load libraries');
+
+                const data = await response.json();
+                renderLibraries(data.libraries);
+            } catch (error) {
+                console.error('Error:', error);
+                librariesList.innerHTML = '<div class="error-message">Failed to load libraries. Please try again.</div>';
+            }
+        }
+
+        function renderLibraries(libraries) {
+            if (libraries.length === 0) {
+                librariesList.innerHTML = '';
+                noLibraries.style.display = 'block';
+                return;
+            }
+
+            noLibraries.style.display = 'none';
+            librariesList.innerHTML = libraries.map(lib => `
+                <div class="library-card" onclick="viewLibrary('${lib.id}')">
+                    <div class="library-card-header">
+                        <h3 class="library-card-title">${escapeHtml(lib.name)}</h3>
+                        <div class="library-card-actions" onclick="event.stopPropagation()">
+                            <button class="card-action-btn" onclick="editLibrary('${lib.id}')">Edit</button>
+                            <button class="card-action-btn delete" onclick="confirmDeleteLibrary('${lib.id}')">Delete</button>
+                        </div>
+                    </div>
+                    ${lib.description ? `<div class="library-card-description">${escapeHtml(lib.description)}</div>` : ''}
+                    <div class="library-card-meta">
+                        <span class="library-card-count">${lib.text_count === 1 ? '1 text' : `${lib.text_count} texts`}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewLibrary(libraryId) {
+            const libraryCard = document.querySelector(`.library-card[onclick*="'${libraryId}'"]`);
+            if (libraryCard) {
+                const name = libraryCard.querySelector('.library-card-title').textContent;
+                showTextViews({ id: libraryId, name: name });
+            }
+        }
+
+        async function createLibrary() {
+            const name = libraryNameInput.value.trim();
+            const description = libraryDescInput.value.trim();
+
+            if (!name) {
+                alert('Please enter a library name');
+                return;
+            }
+
+            try {
+                const response = await fetch('api/libraries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+
+                if (!response.ok) throw new Error('Failed to create library');
+
+                closeLibraryModal();
+                loadLibraries();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to create library. Please try again.');
+            }
+        }
+
+        async function updateLibrary() {
+            const name = libraryNameInput.value.trim();
+            const description = libraryDescInput.value.trim();
+
+            if (!name) {
+                alert('Please enter a library name');
+                return;
+            }
+
+            try {
+                const response = await fetch(`api/libraries/${editingLibraryId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+
+                if (!response.ok) throw new Error('Failed to update library');
+
+                closeLibraryModal();
+                loadLibraries();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update library. Please try again.');
+            }
+        }
+
+        function editLibrary(libraryId) {
+            editingLibraryId = libraryId;
+            libraryModalTitle.textContent = 'Edit Library';
+
+            // Find library data
+            fetch(`api/libraries`)
+                .then(res => res.json())
+                .then(data => {
+                    const lib = data.libraries.find(l => l.id === libraryId);
+                    if (lib) {
+                        libraryNameInput.value = lib.name;
+                        libraryDescInput.value = lib.description || '';
+                        libraryModal.classList.add('active');
+                        libraryNameInput.focus();
+                    }
+                });
+        }
+
+        function confirmDeleteLibrary(libraryId) {
+            confirmModalMessage.textContent = 'Are you sure you want to delete this library? All texts in this library will also be deleted. This action cannot be undone.';
+            deleteCallback = () => deleteLibrary(libraryId);
+            confirmModal.classList.add('active');
+        }
+
+        async function deleteLibrary(libraryId) {
+            try {
+                const response = await fetch(`api/libraries/${libraryId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete library');
+
+                closeConfirmModal();
+                loadLibraries();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete library. Please try again.');
+            }
+        }
+
+        // Text Functions
+        async function loadTexts(libraryId) {
+            textsList.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const response = await fetch(`api/libraries/${libraryId}/texts`);
+                if (!response.ok) throw new Error('Failed to load texts');
+
+                const data = await response.json();
+                renderTexts(data.texts);
+            } catch (error) {
+                console.error('Error:', error);
+                textsList.innerHTML = '<div class="error-message">Failed to load texts. Please try again.</div>';
+            }
+        }
+
+        function renderTexts(texts) {
+            if (texts.length === 0) {
+                textsList.innerHTML = '';
+                noTexts.style.display = 'block';
+                return;
+            }
+
+            noTexts.style.display = 'none';
+            textsList.innerHTML = texts.map(text => `
+                <div class="text-card" onclick="viewText('${text.id}', \`${escapeHtml(text.content).replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                    <div class="library-card-header">
+                        <div style="flex: 1;">
+                            <div class="text-card-preview">${escapeHtml(text.content)}</div>
+                        </div>
+                        <div class="library-card-actions" onclick="event.stopPropagation()">
+                            <button class="card-action-btn" onclick="editText('${text.id}')">Edit</button>
+                            <button class="card-action-btn delete" onclick="confirmDeleteText('${text.id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="text-card-meta">
+                        <span class="text-card-date">Updated: ${new Date(text.updated_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewText(textId, content) {
+            viewTextContent.textContent = content;
+            viewTextModal.classList.add('active');
+        }
+
+        async function createText() {
+            const content = textContentInput.value.trim();
+
+            if (!content) {
+                alert('Please enter content');
+                return;
+            }
+
+            try {
+                const response = await fetch(`api/libraries/${currentLibraryId}/texts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+
+                if (!response.ok) throw new Error('Failed to create text');
+
+                closeTextModal();
+                loadTexts(currentLibraryId);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to create text. Please try again.');
+            }
+        }
+
+        async function updateText() {
+            const content = textContentInput.value.trim();
+
+            if (!content) {
+                alert('Please enter content');
+                return;
+            }
+
+            try {
+                const response = await fetch(`api/texts/${editingTextId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+
+                if (!response.ok) throw new Error('Failed to update text');
+
+                closeTextModal();
+                loadTexts(currentLibraryId);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update text. Please try again.');
+            }
+        }
+
+        function editText(textId) {
+            editingTextId = textId;
+            textModalTitle.textContent = 'Edit Text';
+
+            // Find text data
+            fetch(`api/libraries/${currentLibraryId}/texts`)
+                .then(res => res.json())
+                .then(data => {
+                    const text = data.texts.find(t => t.id === textId);
+                    if (text) {
+                        textContentInput.value = text.content;
+                        textModal.classList.add('active');
+                        textContentInput.focus();
+                    }
+                });
+        }
+
+        function confirmDeleteText(textId) {
+            confirmModalMessage.textContent = 'Are you sure you want to delete this text? This action cannot be undone.';
+            deleteCallback = () => deleteText(textId);
+            confirmModal.classList.add('active');
+        }
+
+        async function deleteText(textId) {
+            try {
+                const response = await fetch(`api/texts/${textId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete text');
+
+                closeConfirmModal();
+                loadTexts(currentLibraryId);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete text. Please try again.');
+            }
+        }
+
+        // Modal Handlers
+        createLibraryBtn.addEventListener('click', () => {
+            editingLibraryId = null;
+            libraryModalTitle.textContent = 'Create New Library';
+            libraryNameInput.value = '';
+            libraryDescInput.value = '';
+            libraryModal.classList.add('active');
+            libraryNameInput.focus();
+        });
+
+        document.getElementById('libraryModalClose').addEventListener('click', closeLibraryModal);
+        document.getElementById('libraryModalCancel').addEventListener('click', closeLibraryModal);
+        document.getElementById('libraryModalSubmit').addEventListener('click', () => {
+            if (editingLibraryId) {
+                updateLibrary();
+            } else {
+                createLibrary();
+            }
+        });
+
+        function closeLibraryModal() {
+            libraryModal.classList.remove('active');
+            editingLibraryId = null;
+        }
+
+        createTextBtn.addEventListener('click', () => {
+            editingTextId = null;
+            textModalTitle.textContent = 'Create New Text';
+            textContentInput.value = '';
+            textModal.classList.add('active');
+            textContentInput.focus();
+        });
+
+        document.getElementById('textModalClose').addEventListener('click', closeTextModal);
+        document.getElementById('textModalCancel').addEventListener('click', closeTextModal);
+        document.getElementById('textModalSubmit').addEventListener('click', () => {
+            if (editingTextId) {
+                updateText();
+            } else {
+                createText();
+            }
+        });
+
+        function closeTextModal() {
+            textModal.classList.remove('active');
+            editingTextId = null;
+        }
+
+        // Confirm Modal Handlers
+        document.getElementById('confirmModalClose').addEventListener('click', closeConfirmModal);
+        document.getElementById('confirmModalCancel').addEventListener('click', closeConfirmModal);
+        document.getElementById('confirmModalSubmit').addEventListener('click', () => {
+            if (deleteCallback) {
+                deleteCallback();
+                deleteCallback = null;
+            }
+        });
+
+        function closeConfirmModal() {
+            confirmModal.classList.remove('active');
+            deleteCallback = null;
+        }
+
+        // View Text Modal Handlers
+        document.getElementById('viewTextModalClose').addEventListener('click', closeViewTextModal);
+        document.getElementById('viewTextModalCloseBtn').addEventListener('click', closeViewTextModal);
+
+        function closeViewTextModal() {
+            viewTextModal.classList.remove('active');
+        }
+
+        // Close modals on backdrop click
+        libraryModal.addEventListener('click', (e) => {
+            if (e.target === libraryModal) closeLibraryModal();
+        });
+
+        textModal.addEventListener('click', (e) => {
+            if (e.target === textModal) closeTextModal();
+        });
+
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) closeConfirmModal();
+        });
+
+        viewTextModal.addEventListener('click', (e) => {
+            if (e.target === viewTextModal) closeViewTextModal();
+        });
+
+        // Utility Functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+{% endblock %}
