@@ -73,7 +73,7 @@ Use this context to improve the correction: {context}
 
 {format_instruction}
 
-Original text: {text}"""
+Original text: \"\"\"{text}\"\"\""""
     else:
         prompt = f"""Fix the grammar and spelling of the following text.
 {style_instruction}
@@ -81,7 +81,7 @@ Original text: {text}"""
 
 {format_instruction}
 
-Original text: {text}"""
+Original text: \"\"\"{text}\"\"\""""
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
