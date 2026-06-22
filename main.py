@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
 from typing import Annotated, Optional
 from secrets import token_hex
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request, Response
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from google import genai
 from google.genai import types
 from jinja2 import Environment, FileSystemLoader
@@ -15,10 +16,8 @@ from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
 
-# Hardcoded credentials
-VALID_USERNAME = "alex"
-VALID_PASSWORD = "123456"
 SECRET_KEY = token_hex(32)
+CREDENTIALS_FILE = "grid_credentials.json"
 
 app = FastAPI(title="Grammar Check", description="Simple grammar checker using AI", root_path=os.getenv("FASTAPI_ROOT_PATH", ""))
 
@@ -37,6 +36,29 @@ if not api_key:
     raise ValueError("GEMINI_API_KEY not found in environment variables")
 
 client = genai.Client(api_key=api_key)
+
+
+def load_credentials():
+    """Load grid credentials from JSON file."""
+    try:
+        with open(CREDENTIALS_FILE, 'r') as f:
+            data = json.load(f)
+            return data.get('users', [])
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
+        return []
+
+
+class Coordinate(BaseModel):
+    """Coordinate in the grid."""
+    x: int
+    y: int
+
+
+class GridAuthRequest(BaseModel):
+    """Grid authentication request."""
+    sequence: list[Coordinate] = Field(..., min_length=5, description="Ordered sequence of grid coordinates")
 
 
 class GrammarCheckRequest(BaseModel):
@@ -180,21 +202,46 @@ async def login_page(request: Request):
     """Render the login page."""
     if request.session.get("authenticated"):
         return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("app_page"), status_code=303)
-    error = request.session.pop("login_error", None)
     template = env.get_template("login.html")
-    return template.render(error=error)
+    return template.render(ROOT_PATH=ROOT_PATH)
 
 
-@app.post("/login", name="login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    """Handle login."""
-    if username == VALID_USERNAME and password == VALID_PASSWORD:
-        request.session["authenticated"] = True
-        request.session["username"] = username
-        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("app_page"), status_code=303)
-    else:
-        request.session["login_error"] = "Invalid username or password"
-        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("login_page"), status_code=303)
+@app.post("/grid-login", name="grid_login")
+async def grid_login(request: Request, auth_data: GridAuthRequest):
+    """Handle grid-based login."""
+    users = load_credentials()
+
+    # Check if sequence matches any user's pattern
+    for user in users:
+        stored_pattern = user.get("pattern", [])
+
+        # Validate sequence length
+        if len(auth_data.sequence) != len(stored_pattern):
+            continue
+
+        # Check each coordinate in sequence
+        is_match = True
+        for i, coord in enumerate(auth_data.sequence):
+            stored_coord = stored_pattern[i]
+            if coord.x != stored_coord["x"] or coord.y != stored_coord["y"]:
+                is_match = False
+                break
+
+        # If pattern matches, authenticate this user
+        if is_match:
+            request.session["authenticated"] = True
+            request.session["username"] = user.get("name", user.get("id", "User"))
+
+            return JSONResponse({
+                "success": True,
+                "redirect_url": f"{ROOT_PATH}/app"
+            })
+
+    # No pattern matched
+    return JSONResponse(
+        content={"success": False, "error": "Invalid pattern"},
+        status_code=401
+    )
 
 
 @app.get("/app", response_class=HTMLResponse, name="app_page")

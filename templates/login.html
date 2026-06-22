@@ -27,7 +27,7 @@
         }
 
         .container {
-            max-width: 400px;
+            max-width: 500px;
             width: 100%;
             background: #242424;
             border: 1px solid #333;
@@ -59,8 +59,7 @@
             font-size: 14px;
         }
 
-        input[type="text"],
-        input[type="password"] {
+        input[type="text"] {
             width: 100%;
             padding: 12px;
             border: 1px solid #444;
@@ -90,10 +89,34 @@
             background: #0052a3;
         }
 
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            background: #444;
+            margin-top: 10px;
+        }
+
+        .clear-btn:hover {
+            background: #555;
+        }
+
         .error {
             background: #3a1a1a;
             border: 1px solid #6b2020;
             color: #ff6b6b;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #1a3a1a;
+            border: 1px solid #206b20;
+            color: #6bff6b;
             padding: 12px;
             border-radius: 4px;
             margin-bottom: 20px;
@@ -110,30 +133,258 @@
             font-size: 14px;
             line-height: 1.5;
         }
+
+        .grid-container {
+            margin-top: 24px;
+        }
+
+        .grid-label {
+            color: #b0b0b0;
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0;
+            margin-bottom: 16px;
+        }
+
+        .grid-cell {
+            aspect-ratio: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0066cc;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .grid-cell:hover {
+            border-color: #0066cc;
+            background: #2a2a2a;
+        }
+
+        .grid-cell.active {
+            background: #0066cc;
+            border-color: #0066cc;
+            color: white;
+        }
+
+        .grid-cell.active:hover {
+            background: #0052a3;
+            border-color: #0052a3;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 12px;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="welcome">
             <h1>Welcome</h1>
-            <p class="welcome-text">Loculus AI Grammar - AI-powered grammar correction</p>
+            <p class="welcome-text">Loculus AI Grammar - Grid Authentication</p>
         </div>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
+        <div id="message-container"></div>
 
-        <form method="post" action="login">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required autofocus>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
+        <div class="grid-container">
+            <div class="grid-label">Click the grid cells in your pattern sequence:</div>
+            <div class="grid" id="auth-grid"></div>
+            <button type="button" class="clear-btn" id="clear-btn">Clear Pattern</button>
+            <p class="hint">Click at least 5 cells to create your authentication pattern.</p>
+        </div>
+
+        <button type="button" id="login-btn" disabled>Login</button>
     </div>
+
+    <script>
+        const GRID_SIZE = 5;
+        const ROOT_PATH = {{ '"' + ROOT_PATH + '"' if ROOT_PATH else '""' }};
+        let sequence = [];
+        let isDragging = false;
+        const gridContainer = document.getElementById('auth-grid');
+        const clearBtn = document.getElementById('clear-btn');
+        const loginBtn = document.getElementById('login-btn');
+        const messageContainer = document.getElementById('message-container');
+
+        // Initialize the grid
+        function initGrid() {
+            gridContainer.innerHTML = '';
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.addEventListener('mousedown', handleCellStart);
+                    cell.addEventListener('mouseenter', handleCellEnter);
+                    cell.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    gridContainer.appendChild(cell);
+                }
+            }
+
+            // Add mouseup event to document
+            document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchend', handleTouchEnd, { passive: false });
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        }
+
+        // Handle cell click/start
+        function handleCellStart(event) {
+            event.preventDefault();
+            isDragging = true;
+            addCellToSequence(event.currentTarget);
+        }
+
+        // Handle cell enter during drag
+        function handleCellEnter(event) {
+            if (isDragging) {
+                addCellToSequence(event.currentTarget);
+            }
+        }
+
+        // Handle touch start
+        function handleTouchStart(event) {
+            event.preventDefault();
+            isDragging = true;
+            const touch = event.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (cell && cell.classList.contains('grid-cell')) {
+                addCellToSequence(cell);
+            }
+        }
+
+        // Handle touch move
+        function handleTouchMove(event) {
+            if (!isDragging) return;
+            event.preventDefault();
+            const touch = event.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (cell && cell.classList.contains('grid-cell')) {
+                addCellToSequence(cell);
+            }
+        }
+
+        // Handle touch end
+        function handleTouchEnd(event) {
+            isDragging = false;
+        }
+
+        // Handle drag end
+        function handleDragEnd() {
+            isDragging = false;
+        }
+
+        // Add cell to sequence
+        function addCellToSequence(cell) {
+            const x = parseInt(cell.dataset.x);
+            const y = parseInt(cell.dataset.y);
+
+            // Check if this cell is already in sequence
+            const existingIndex = sequence.findIndex(item => item.x === x && item.y === y);
+
+            if (existingIndex !== -1) {
+                // Cell already clicked, ignore
+                return;
+            }
+
+            // Add to sequence
+            sequence.push({ x, y });
+            updateGrid();
+        }
+
+        // Update grid display
+        function updateGrid() {
+            const cells = gridContainer.querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const index = sequence.findIndex(item => item.x === x && item.y === y);
+
+                if (index !== -1) {
+                    cell.classList.add('active');
+                    cell.textContent = index + 1;
+                } else {
+                    cell.classList.remove('active');
+                    cell.textContent = '';
+                }
+            });
+
+            // Update login button state
+            loginBtn.disabled = sequence.length < 5;
+        }
+
+        // Clear pattern
+        clearBtn.addEventListener('click', () => {
+            sequence = [];
+            updateGrid();
+            clearMessages();
+        });
+
+        // Login handler
+        loginBtn.addEventListener('click', async () => {
+            if (sequence.length < 5) {
+                showMessage('Please select at least 5 cells', 'error');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Authenticating...';
+
+            try {
+                const response = await fetch(ROOT_PATH + '/grid-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sequence: sequence
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Authentication successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 500);
+                } else {
+                    showMessage(data.error || 'Authentication failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                loginBtn.disabled = sequence.length < 5;
+                loginBtn.textContent = 'Login';
+            }
+        });
+
+        // Show message
+        function showMessage(text, type) {
+            messageContainer.innerHTML = `<div class="${type}">${text}</div>`;
+        }
+
+        // Clear messages
+        function clearMessages() {
+            messageContainer.innerHTML = '';
+        }
+
+        // Initialize
+        initGrid();
+    </script>
 </body>
 </html>
