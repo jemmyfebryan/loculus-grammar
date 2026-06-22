@@ -27,16 +27,20 @@ async def grammar_page(request: Request):
 
 
 @router.post("/api/check")
-async def api_check_grammar(request: GrammarCheckRequest):
+async def api_check_grammar(http_request: Request, request: GrammarCheckRequest):
     """Check and correct grammar via API."""
     keep_writing_style = request.keep_writing_style if request.keep_writing_style is not None else False
     preserve_formatting = request.preserve_formatting if request.preserve_formatting is not None else True
     show_explanations = request.show_explanations if request.show_explanations is not None else False
     multiple_outputs = request.multiple_outputs if request.multiple_outputs is not None else 1
 
+    user_id = http_request.session.get("user_id")
+
     result = get_grammar_correction(
         request.text,
         request.context,
+        request.library_id,
+        user_id,
         keep_writing_style,
         preserve_formatting,
         request.custom_instructions,

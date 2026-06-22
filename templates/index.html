@@ -36,6 +36,16 @@
                     style="min-height: 80px;"></textarea>
             </div>
             <div class="checkbox-group">
+                <input type="checkbox" id="addLibrary" name="addLibrary" title="Use texts from your library as examples for better grammar correction">
+                <label for="addLibrary" title="Use texts from your library as examples for better grammar correction">Add Library</label>
+            </div>
+            <div id="librarySelectGroup" class="library-select-group">
+                <select id="librarySelect" name="librarySelect" style="width: 100%; padding: 12px; border: 1px solid #444; background: #1a1a1a; color: #e0e0e0; font-size: 15px; font-family: inherit; cursor: pointer;">
+                    <option value="">Select a library...</option>
+                </select>
+                <div style="color: #888; font-size: 12px; margin-top: 6px;">Top 3 most similar texts will be used as examples</div>
+            </div>
+            <div class="checkbox-group">
                 <input type="checkbox" id="keepWritingStyle" name="keepWritingStyle" title="Maintain your original writing style, tone, and voice while fixing errors">
                 <label for="keepWritingStyle" title="Maintain your original writing style, tone, and voice while fixing errors">Keep the writing style</label>
             </div>
@@ -98,6 +108,26 @@
         </div>
     </div>
 
+    <style>
+        .library-select-group {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin-bottom 0.3s ease-out;
+        }
+
+        .library-select-group.visible {
+            max-height: 200px;
+            opacity: 1;
+            margin-bottom: 12px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+    </style>
+
     <script>
         const form = document.getElementById('grammarForm');
         const resultDiv = document.getElementById('result');
@@ -121,9 +151,49 @@
         const modalCancel = document.getElementById('modalCancel');
         const modalSubmit = document.getElementById('modalSubmit');
         const quoteInput = document.getElementById('quoteInput');
+        const addLibraryCheckbox = document.getElementById('addLibrary');
+        const librarySelectGroup = document.getElementById('librarySelectGroup');
+        const librarySelect = document.getElementById('librarySelect');
 
         let advancedVisible = false;
         let lastRequestData = null;
+
+        // Load libraries on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadLibraries();
+        });
+
+        async function loadLibraries() {
+            try {
+                const response = await fetch('api/libraries');
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const libraries = data.libraries || [];
+
+                // Clear existing options except the default one
+                librarySelect.innerHTML = '<option value="">Select a library...</option>';
+
+                // Add library options
+                libraries.forEach(lib => {
+                    const option = document.createElement('option');
+                    option.value = lib.id;
+                    option.textContent = lib.name;
+                    librarySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load libraries:', error);
+            }
+        }
+
+        addLibraryCheckbox.addEventListener('change', () => {
+            if (addLibraryCheckbox.checked) {
+                librarySelectGroup.classList.add('visible');
+            } else {
+                librarySelectGroup.classList.remove('visible');
+                librarySelect.value = '';
+            }
+        });
 
         addContextCheckbox.addEventListener('change', () => {
             if (addContextCheckbox.checked) {
@@ -167,6 +237,7 @@
             if (!text) return;
 
             const context = contextTextarea.value.trim();
+            const libraryId = addLibraryCheckbox.checked ? librarySelect.value : null;
             const keepWritingStyle = keepWritingStyleCheckbox.checked;
             const preserveFormatting = preserveFormattingCheckbox.checked;
             const showExplanations = showExplanationsCheckbox.checked;
@@ -175,6 +246,7 @@
             const requestData = {
                 text,
                 context,
+                library_id: libraryId,
                 keep_writing_style: keepWritingStyle,
                 preserve_formatting: preserveFormatting,
                 show_explanations: showExplanations,

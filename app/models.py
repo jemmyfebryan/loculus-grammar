@@ -25,6 +25,7 @@ class ChangePasswordRequest(BaseModel):
 class GrammarCheckRequest(BaseModel):
     text: Annotated[str, Field(min_length=1, description="Text to check grammar for")]
     context: Optional[str] = Field(None, description="Additional context to improve grammar correction")
+    library_id: Optional[str] = Field(None, description="Library ID to use for similar text examples")
     keep_writing_style: Optional[bool] = Field(False, description="Keep the original writing style")
     preserve_formatting: Optional[bool] = Field(True, description="Preserve formatting (line breaks, paragraphs)")
     custom_instructions: Optional[str] = Field(None, description="Custom instructions for grammar correction")
