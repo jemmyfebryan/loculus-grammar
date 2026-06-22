@@ -1,0 +1,17 @@
+.grid-container {
+    margin-top: 24px;
+}
+
+.grid-label {
+    color: #b0b0b0;
+    font-weight: 500;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.hint {
+    color: #666;
+    font-size: 12px;
+    margin-top: 8px;
+    line-height: 1.4;
+}

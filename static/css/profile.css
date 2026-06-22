@@ -1,0 +1,77 @@
+.profile-section {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 24px;
+    border-radius: 8px;
+    margin-top: 24px;
+}
+
+.profile-title {
+    color: #e0e0e0;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.profile-info {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.profile-value {
+    color: #e0e0e0;
+}
+
+.profile-actions {
+    border-top: 1px solid #333;
+    padding-top: 24px;
+}
+
+.profile-actions h3 {
+    color: #e0e0e0;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.action-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 12px;
+    margin-right: 8px;
+}
+
+.action-btn.primary {
+    background: #0066cc;
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: #0052a3;
+}
+
+.action-btn.secondary {
+    background: #444;
+    color: #e0e0e0;
+}
+
+.action-btn.secondary:hover {
+    background: #555;
+}
+
+.step-instruction {
+    color: #888;
+    margin-bottom: 16px;
+}
+
+.password-error {
+    color: #ff6b6b;
+    margin-top: 12px;
+    display: none;
+}

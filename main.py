@@ -8,6 +8,7 @@ from secrets import token_hex
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
 from jinja2 import Environment, FileSystemLoader
@@ -23,6 +24,9 @@ app = FastAPI(title="Grammar Check", description="Simple grammar checker using A
 
 # Store root_path for use in redirects
 ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH", "")
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Add session middleware
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)

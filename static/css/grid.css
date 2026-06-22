@@ -1,0 +1,53 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin-bottom: 16px;
+}
+
+.grid-cell {
+    aspect-ratio: 1;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0066cc;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.grid-cell:hover {
+    border-color: #0066cc;
+    background: #2a2a2a;
+}
+
+.grid-cell.active {
+    background: #0066cc;
+    border-color: #0066cc;
+    color: white;
+}
+
+.grid-cell.active:hover {
+    background: #0052a3;
+    border-color: #0052a3;
+}
+
+.clear-btn {
+    background: #444;
+    margin-top: 10px;
+    margin-right: 8px;
+    width: auto;
+    padding: 8px 16px;
+}
+
+.clear-btn:hover {
+    background: #555;
+}
+
+.password-step button:not(.clear-btn) {
+    margin-bottom: 12px;
+}
