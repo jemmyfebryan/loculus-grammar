@@ -1,5 +1,4 @@
 const GRID_SIZE = 5;
-const ROOT_PATH = typeof window !== 'undefined' ? (window.ROOT_PATH || '') : '';
 let sequence = [];
 let isDragging = false;
 
@@ -128,7 +127,7 @@ loginBtn.addEventListener('click', async () => {
     loginBtn.textContent = 'Authenticating...';
 
     try {
-        const response = await fetch(ROOT_PATH + '/grid-login', {
+        const response = await fetch('grid-login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

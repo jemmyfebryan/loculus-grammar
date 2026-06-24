@@ -1,6 +1,5 @@
 // Change Password Functionality
 const GRID_SIZE = 5;
-const ROOT_PATH = typeof window !== 'undefined' ? (window.ROOT_PATH || '') : '';
 let currentSequence = [];
 let newSequence = [];
 let confirmSequence = [];
@@ -162,7 +161,7 @@ verifyCurrentBtn.addEventListener('click', async () => {
     }
 
     try {
-        const response = await fetch(ROOT_PATH + '/change-password', {
+        const response = await fetch('change-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'verify_current', sequence: currentSequence })
@@ -212,7 +211,7 @@ confirmChangeBtn.addEventListener('click', async () => {
     }
 
     try {
-        const response = await fetch(ROOT_PATH + '/change-password', {
+        const response = await fetch('change-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'change_password', new_sequence: newSequence })
