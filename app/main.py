@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.config import SECRET_KEY, ROOT_PATH
+from app.config import SECRET_KEY
 from app.routes import auth, grammar, profile, library
 
 
@@ -24,11 +24,10 @@ class ForwardedPrefixMiddleware(BaseHTTPMiddleware):
         return response
 
 
-# Create FastAPI app
+# Create FastAPI app (without hardcoded root_path)
 app = FastAPI(
     title="Grammar Check",
-    description="Simple grammar checker using AI",
-    root_path=ROOT_PATH
+    description="Simple grammar checker using AI"
 )
 
 # Initialize Jinja2Templates with FastAPI

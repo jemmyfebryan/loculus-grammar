@@ -2,7 +2,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from app.config import ROOT_PATH
 from app.database import load_credentials, save_credentials
 from app.models import GridAuthRequest, ChangePasswordRequest
 
