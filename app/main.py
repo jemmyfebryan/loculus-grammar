@@ -3,28 +3,17 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import SECRET_KEY
 from app.routes import auth, grammar, profile, library
 
 
-class ForwardedPrefixMiddleware(BaseHTTPMiddleware):
-    """Middleware to handle X-Forwarded-Prefix header from proxy."""
-
-    async def dispatch(self, request: Request, call_next):
-        # Get the forwarded prefix from proxy
-        forwarded_prefix = request.headers.get("X-Forwarded-Prefix", "").rstrip("/")
-
-        if forwarded_prefix:
-            # Override the root_path for url generation
-            request.scope["root_path"] = forwarded_prefix
-
-        response = await call_next(request)
-        return response
+def get_proxy_prefix(request: Request) -> str:
+    """Get the proxy prefix from X-Forwarded-Prefix header."""
+    return request.headers.get("X-Forwarded-Prefix", "").rstrip("/")
 
 
-# Create FastAPI app (without hardcoded root_path)
+# Create FastAPI app
 app = FastAPI(
     title="Grammar Check",
     description="Simple grammar checker using AI"
@@ -33,10 +22,7 @@ app = FastAPI(
 # Initialize Jinja2Templates with FastAPI
 templates = Jinja2Templates(directory="templates")
 
-# Add forwarded prefix middleware BEFORE session middleware
-app.add_middleware(ForwardedPrefixMiddleware)
-
-# Mount static files directory
+# Mount static files directory FIRST (before any middleware that might interfere)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Add session middleware

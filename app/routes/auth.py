@@ -57,9 +57,13 @@ async def grid_login(request: Request, auth_data: GridAuthRequest):
             request.session["user_id"] = user.get("id", "user")
             request.session["username"] = user.get("name", user.get("id", "User"))
 
+            # Get proxy prefix from request headers
+            from app.main import get_proxy_prefix
+            proxy_prefix = get_proxy_prefix(request)
+
             return JSONResponse({
                 "success": True,
-                "redirect_url": str(request.app.url_path_for("grammar_page"))
+                "redirect_url": f"{proxy_prefix}/grammar"
             })
 
     # No pattern matched
