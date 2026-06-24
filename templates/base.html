@@ -430,9 +430,9 @@
         {% if authenticated %}
         <nav class="navbar">
             <ul class="navbar-nav">
-                <li><a href="{{ ROOT_PATH }}/grammar" {% if page == 'grammar' %}class="active"{% endif %}>Grammar Check</a></li>
-                <li><a href="{{ ROOT_PATH }}/library" {% if page == 'library' %}class="active"{% endif %}>Library</a></li>
-                <li><a href="{{ ROOT_PATH }}/profile" {% if page == 'profile' %}class="active"{% endif %}>Profile</a></li>
+                <li><a href="{{ url_for('grammar_page') }}" {% if page == 'grammar' %}class="active"{% endif %}>Grammar Check</a></li>
+                <li><a href="{{ url_for('library_page') }}" {% if page == 'library' %}class="active"{% endif %}>Library</a></li>
+                <li><a href="{{ url_for('profile_page') }}" {% if page == 'profile' %}class="active"{% endif %}>Profile</a></li>
             </ul>
         </nav>
         {% endif %}

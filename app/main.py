@@ -1,20 +1,11 @@
 """Main application entry point."""
-import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from jinja2 import Environment, FileSystemLoader
 
 from app.config import SECRET_KEY, ROOT_PATH
 from app.routes import auth, grammar, profile, library
-
-# Initialize Jinja2
-_template_env = Environment(loader=FileSystemLoader("templates"))
-
-def get_template_env() -> Environment:
-    """Get the Jinja2 template environment."""
-    return _template_env
-
 
 # Create FastAPI app
 app = FastAPI(
@@ -22,6 +13,9 @@ app = FastAPI(
     description="Simple grammar checker using AI",
     root_path=ROOT_PATH
 )
+
+# Initialize Jinja2Templates with FastAPI
+templates = Jinja2Templates(directory="templates")
 
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="static"), name="static")

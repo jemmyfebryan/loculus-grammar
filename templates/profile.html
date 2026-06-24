@@ -19,7 +19,7 @@
                 Change Password
             </button>
 
-            <a href="{{ ROOT_PATH }}/logout" class="action-btn secondary">
+            <a href="{{ url_for('logout') }}" class="action-btn secondary">
                 Logout
             </a>
         </div>
@@ -55,11 +55,11 @@
         </div>
     </div>
 
-    <link rel="stylesheet" href="{{ ROOT_PATH }}/static/css/grid.css">
-    <link rel="stylesheet" href="{{ ROOT_PATH }}/static/css/profile.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/grid.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/profile.css') }}">
 
-    <script src="{{ ROOT_PATH }}/static/js/profile.js"></script>
+    <script src="{{ url_for('static', path='/js/profile.js') }}"></script>
     <script>
-        window.ROOT_PATH = {{ '"' + ROOT_PATH + '"' if ROOT_PATH else '""' }};
+        window.ROOT_PATH = {{ '"' + request.scope['root_path'].rstrip('/') + '"' if request.scope['root_path'] else '""' }};
     </script>
 {% endblock %}

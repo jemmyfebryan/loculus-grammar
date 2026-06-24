@@ -1,36 +1,34 @@
 """Authentication routes."""
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from jinja2 import Environment
+from fastapi.templating import Jinja2Templates
 from app.config import ROOT_PATH
 from app.database import load_credentials, save_credentials
 from app.models import GridAuthRequest, ChangePasswordRequest
 
 router = APIRouter()
 
-
-def get_templates_env() -> Environment:
-    """Get Jinja2 environment (will be set from main app)."""
-    from app.main import get_template_env
-    return get_template_env()
+def get_templates() -> Jinja2Templates:
+    """Get Jinja2 templates instance."""
+    from app.main import templates
+    return templates
 
 
 @router.get("/", name="index")
 async def index(request: Request):
     """Redirect to login or grammar page based on auth status."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url=f"{ROOT_PATH}/grammar", status_code=303)
-    return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("index"), status_code=303)
+        return RedirectResponse(url=request.app.url_path_for("grammar_page"), status_code=303)
+    return RedirectResponse(url=request.app.url_path_for("login_page"), status_code=303)
 
 
 @router.get("/login", response_class=HTMLResponse, name="login_page")
 async def login_page(request: Request):
     """Render the login page."""
     if request.session.get("authenticated"):
-        return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("grammar_page"), status_code=303)
-    env = get_templates_env()
-    template = env.get_template("login.html")
-    return template.render(ROOT_PATH=ROOT_PATH)
+        return RedirectResponse(url=request.app.url_path_for("grammar_page"), status_code=303)
+    templates = get_templates()
+    return templates.TemplateResponse(request, "login.html", {"request": request})
 
 
 @router.post("/grid-login", name="grid_login")
@@ -62,7 +60,7 @@ async def grid_login(request: Request, auth_data: GridAuthRequest):
 
             return JSONResponse({
                 "success": True,
-                "redirect_url": f"{ROOT_PATH}/grammar"
+                "redirect_url": str(request.app.url_path_for("grammar_page"))
             })
 
     # No pattern matched
@@ -140,4 +138,4 @@ async def change_password(request: Request, req: ChangePasswordRequest):
 async def logout(request: Request):
     """Handle logout."""
     request.session.clear()
-    return RedirectResponse(url=ROOT_PATH + request.app.url_path_for("index"), status_code=303)
+    return RedirectResponse(url=request.app.url_path_for("index"), status_code=303)
