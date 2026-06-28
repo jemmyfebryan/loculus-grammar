@@ -178,7 +178,8 @@ async def import_library(request: Request):
     merge_strategy = form.get("merge_strategy", "merge")
     target_library_id = form.get("target_library_id")
 
-    if not file or not isinstance(file, UploadFile):
+    # More lenient file check - check if it has a filename
+    if not file or not hasattr(file, 'filename') or not file.filename:
         raise HTTPException(status_code=400, detail="File is required")
 
     if merge_strategy not in ["replace", "merge"]:
