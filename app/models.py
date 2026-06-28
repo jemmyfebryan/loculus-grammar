@@ -88,3 +88,9 @@ class Text(BaseModel):
     content: str
     created_at: str
     updated_at: str
+
+
+class LibraryImportRequest(BaseModel):
+    """Request to import a library."""
+    merge_strategy: Annotated[str, Field(pattern="^(replace|merge)$", description="Merge strategy: 'replace' or 'merge'")]
+    target_library_id: Optional[str] = Field(None, description="Target library ID to overwrite. If null, creates new library.")

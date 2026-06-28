@@ -1,4 +1,5 @@
 """Library management routes."""
+import json
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -135,3 +136,68 @@ async def delete_text(request: Request, text_id: str):
         raise HTTPException(status_code=404, detail="Text not found")
 
     return {"success": True}
+
+
+@router.get("/api/libraries/{library_id}/export")
+async def export_library(request: Request, library_id: str):
+    """Export a library as a JSON file."""
+    if not request.session.get("authenticated"):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = request.session.get("user_id")
+    export_data = library_service.export_library(user_id, library_id)
+
+    if not export_data:
+        raise HTTPException(status_code=404, detail="Library not found")
+
+    from fastapi.responses import Response
+
+    json_str = json.dumps(export_data, indent=2)
+    filename = f"library_{export_data['library']['name'].replace(' ', '_')}.json"
+
+    return Response(
+        content=json_str,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.post("/api/libraries/import")
+async def import_library(request: Request):
+    """Import a library from a JSON file."""
+    if not request.session.get("authenticated"):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    from fastapi import UploadFile
+
+    user_id = request.session.get("user_id")
+
+    # Parse form data
+    form = await request.form()
+    file = form.get("file")
+    merge_strategy = form.get("merge_strategy", "merge")
+    target_library_id = form.get("target_library_id")
+
+    if not file or not isinstance(file, UploadFile):
+        raise HTTPException(status_code=400, detail="File is required")
+
+    if merge_strategy not in ["replace", "merge"]:
+        raise HTTPException(status_code=400, detail="Invalid merge_strategy")
+
+    try:
+        contents = await file.read()
+        import_data = json.loads(contents)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+
+    library = library_service.import_library(
+        user_id,
+        import_data,
+        target_library_id=target_library_id,
+        merge_strategy=merge_strategy
+    )
+
+    if not library:
+        raise HTTPException(status_code=400, detail="Failed to import library. Invalid data or target library not found.")
+
+    return {"library": library}
