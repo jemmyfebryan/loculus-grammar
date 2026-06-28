@@ -30,3 +30,6 @@ pids/
 # OS
 .DS_Store
 Thumbs.db
+
+# User library data (users can export/import their libraries)
+database/library_*.json
